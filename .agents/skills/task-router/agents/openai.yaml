@@ -1,6 +1,6 @@
 interface:
   display_name: "Task Router"
-  short_description: "Route repository work to native workflows"
-  default_prompt: "Use $task-router to route this repository task to the lightest native workflow."
+  short_description: "Route a task from the engineering entry point"
+  default_prompt: "Use $task-router as the lower-level router for this repository task."
 policy:
   allow_implicit_invocation: true

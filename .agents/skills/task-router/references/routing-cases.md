@@ -11,6 +11,9 @@ Use these as manual pressure cases for the routing rules. The expected result is
 | “检查 parser 模块的测试为什么失败，不要改代码。” | Small or Medium / check-only, based on investigation complexity; no fix. |
 | “把配置存储从 JSON 迁移到 SQLite，要求兼容旧数据并提供回滚。” | Large / implementation; native Plan → persisted ExecPlan → permitted native Worktree/Goal → milestones → real checks → native Review against base. |
 | “$task-router 评估多窗口架构迁移，只做计划，不修改文件。” | Large / plan-only; no file writes, ExecPlan persistence, Worktree, Goal, or implementation. |
+| “$engineering-workflow 把刚才讨论的设置改动落到仓库，并运行相关测试。” | Route through Task Brief only if needed, then Small/Medium / implementation according to risk; use the lightest native workflow. |
+| “$task-brief 把刚才讨论的架构想法整理成任务定义，不要实施。” | Return a Task Brief only; preserve plan-only/no-write boundary and do not route into implementation. |
+| “完成这个工程任务后，检查是否有可重复的仓库环境摩擦。” | Use `$repo-retrospective`; default to no changes and persist only evidence-backed recurring improvements. |
 
 ## Must remain discussion
 
@@ -27,4 +30,6 @@ Use these as manual pressure cases for the routing rules. The expected result is
 - A Medium implementation does not need repeated approval for routine steps, but a consequential product, architecture, API, compatibility, data-loss, security, irreversible/costly choice, or explicit wait still pauses.
 - A native-looking outline, a custom diff review, an ordinary branch, or an open-ended “keep going” prompt is not respectively native Plan, native Review, Worktree, or Goal.
 - Review is additional evidence; it never substitutes for real tests.
+- `$engineering-workflow` is the total entry point; `$task-router` remains its lower-level router, while `$task-brief` may be used independently for task definition.
+- `$option-explorer` is opt-in and only applies when multiple materially different paths have no clear winner and a wrong choice is costly.
 - `定稿` and `发布` remain repository `AGENTS.md` commands, not Small/Medium/Large classifications.
