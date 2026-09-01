@@ -3,4 +3,4 @@ interface:
   short_description: "Route a task from the engineering entry point"
   default_prompt: "Use $task-router as the lower-level router for this repository task."
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false
