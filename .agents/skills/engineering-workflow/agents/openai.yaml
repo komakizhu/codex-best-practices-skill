@@ -1,6 +1,6 @@
 interface:
   display_name: "Engineering Workflow"
   short_description: "Route repository work through native Codex capabilities"
-  default_prompt: "Use $engineering-workflow to show the five-item brief, confirm it, and route this repository task through its required native stages."
+  default_prompt: "Use $engineering-workflow to detect exploration versus action-ready work, match clear intent to an available internal discussion helper, keep helper names out of normal user-facing callouts, then show/confirm brief, route, Option, native Plan, execution, and optional retrospective handoffs."
 policy:
   allow_implicit_invocation: false
