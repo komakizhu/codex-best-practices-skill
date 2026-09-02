@@ -6,6 +6,9 @@ Use these as manual pressure cases for the routing rules. The expected result is
 
 | User request | Expected result |
 | --- | --- |
+| “$engineering-workflow 这里有个 Bug：这句话无法调用这个 Skill，我还不确定原因。” | Show the Bug-review/RCA notice and enter read-only `$rca-analyze`; do not display a Task Brief, route, or modify files. |
+| “$engineering-workflow 修复这个 Bug：这句话无法调用这个 Skill，并补齐同类调用规则。” | Treat as action-ready: display and confirm the five-item Task Brief, then route; the confirmed implementation route must complete RCA before any write and cover representative cases plus the shared mapping rule. |
+| “$engineering-workflow 这个小 Bug 的原因是什么？先别改。” | Treat as explicit `check-only`: display and confirm the five-item Task Brief, route with no-write authorization, then use focused RCA during the read-only investigation; do not implement. |
 | “把设置页面的 Save 改成保存，并运行相关测试。”（未显式调用 Workflow） | Ordinary host handling; do not implicitly activate `$engineering-workflow` or `$task-router`. |
 | “$engineering-workflow 把设置页面的 Save 改成保存，并运行相关测试。” | Display the five-item Task Brief with `确认` / `修改：...` / `取消` instructions; after confirmation, show the Small route handoff and wait for `确认路由`, then make the minimal change and run targeted verification. |
 | “修复 Markdown 第一次打开明显卡顿的问题，完成后运行相关检查。”（未显式调用 Workflow） | Ordinary host handling; do not implicitly activate the engineering workflow. |
@@ -17,6 +20,14 @@ Use these as manual pressure cases for the routing rules. The expected result is
 | “$engineering-workflow 把刚才讨论的设置改动落到仓库，并运行相关测试。” | Always display and confirm the five-item Task Brief, show and confirm the route, explicitly announce whether Option triggers, and use the required native stages only after their handoff confirmations. |
 | “$task-brief 把刚才讨论的架构想法整理成任务定义，不要实施。” | Return a Task Brief only; preserve plan-only/no-write boundary and do not route into implementation. |
 | “完成这个工程任务后，检查是否有可重复的仓库环境摩擦。” | Use `$repo-retrospective`; default to no changes and persist only evidence-backed recurring improvements. |
+
+## Should enter RCA
+
+| User request | Expected result |
+| --- | --- |
+| “$rca-analyze 这个 Skill 为什么调不起来？先分析，不要修。” | Build a red-capable invocation check, trace wording → matching → policy → parent Workflow boundaries, compare a working invocation, and return an RCA report without writing. |
+| “$engineering-workflow 这个 Bug 可能影响很多类似调用，先把代表性问题和共因找出来。” | Treat as explicit `check-only`: display and confirm the five-item Task Brief, route with no-write authorization, then perform full RCA for representative cases and a generalization boundary; do not implement. |
+| “$engineering-workflow 看看这个 Bug，能不能顺便修？” | Treat as a symptom report with ambiguous repair intent; enter read-only RCA and do not infer implementation authorization. |
 
 ## Should match a local Skill
 
@@ -52,6 +63,8 @@ Use these as manual pressure cases for the routing rules. The expected result is
 - A concrete repository request without an explicit `$engineering-workflow` or `$task-router` invocation does not implicitly activate either Skill.
 - A concrete repository request without an explicit `$engineering-workflow` or `$task-router` invocation does not implicitly activate `$task-brief`; an explicit standalone `$task-brief` remains the only other entry.
 - “检查” does not become “修复”; a failing test is evidence, not authorization.
+- A symptom-only Bug report does not become action-ready: it enters read-only `$rca-analyze`. An explicit Bug-fix request may enter Task Brief/Router, but no Bug fix is written until the root cause is established.
+- An explicit request to check, diagnose, investigate, review, or explain a failure without changing files is action-ready `check-only`: it enters Task Brief/Router first, and may use RCA during its read-only investigation.
 - “先规划”“只分析” selects `plan-only`; “不要修改文件” is a no-write boundary but does not turn a concrete check into `plan-only`, even after `$task-router` is explicit.
 - Every explicit `$engineering-workflow` invocation first applies the intent gate. Action-ready work displays the five-item Task Brief, while exploratory work displays the Exploration handoff; neither enters Router, Plan, or writes before the relevant subsequent confirmation.
 - The intent gate runs before the Brief: a vague idea or `先聊一聊` enters Exploration, where the agent does not create or live-update a five-item brief. `进入头脑风暴`, `继续讨论`, `整理 brief`, and `取消` are explicit next-step replies.
@@ -64,6 +77,7 @@ Use these as manual pressure cases for the routing rules. The expected result is
 - A Skill with `disable-model-invocation: true`, such as `带文档拷问`, is user-only and cannot be auto-invoked by `$engineering-workflow`; offer the exact user invocation or a model-invocable alternative.
 - A user-only Skill handoff stays generic in normal output, gives a clear user entry and model-invocable fallback, and offers the exits (`继续普通讨论` / `取消`); it does not silently substitute or auto-run the disabled wrapper.
 - Normal user-facing callouts use a public allowlist: `$engineering-workflow`, `$task-brief`, `$task-router`, `$option-explorer`, and `$repo-retrospective`. Other local Skills are described as capabilities such as `结构化探索` or `逐项澄清`; no unsupported `hidden` metadata field is invented, and host-rendered Skill chips are not misrepresented as hidden.
+- Normal user-facing callouts also allow `$rca-analyze`; it is the read-only Bug-review stage. Its result does not silently enter `$task-brief`, `$task-router`, Plan, or implementation.
 - Never auto-chain multiple local Skills. After one returns, re-evaluate the user’s intent; only `整理 brief` or a concrete action-ready request resumes Task Brief.
 - A direct/urgent phrase in the initial Workflow message cannot serve as pre-confirmation. After the Brief is displayed, “确认”“按这个做” or “直接修” may confirm it, while preserving all route stages.
 - The brief’s fifth item ends with a concrete reply contract: `确认` continues to Router, `修改：...` regenerates the full brief, `先聊一聊` freezes the snapshot and enters Exploration, and `取消` stops.
@@ -73,6 +87,7 @@ Use these as manual pressure cases for the routing rules. The expected result is
 - After read-only investigation, the agent explicitly reports whether the three Option conditions hold. If they hold, `进入 option` is required; `跳过 option` continues to the next-stage handoff.
 - Option exploration ends with a selection handoff (`选择 A/B`, `回到 Plan`, or `取消`) and never authorizes writes by itself.
 - A Small implementation may proceed directly only after route confirmation. A Medium implementation must complete native Plan after read-only investigation and before any write; a Large implementation follows the existing native Plan and milestone requirements. After native Plan, implementation waits for `确认计划，执行`; Worktree, Goal, ExecPlan, migration, and rollback choices are surfaced there. Routine work after confirmation need not pause, but consequential product, architecture, API, compatibility, data-loss, security, irreversible/costly choice, or explicit wait still pauses.
+- A Small Bug implementation still requires focused RCA before the first write. A systemic/Large Bug requires representative failures, the shared mechanism, a generalization boundary, and adjacent regression checks before native Plan or implementation.
 - A native-looking outline, a custom diff review, an ordinary branch, or an open-ended “keep going” prompt is not respectively native Plan, native Review, Worktree, or Goal.
 - Review is additional evidence; it never substitutes for real tests.
 - `$engineering-workflow` is the total entry point; `$task-router` remains its lower-level router, while `$task-brief` may be used independently for task definition.

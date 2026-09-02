@@ -7,7 +7,7 @@ description: "Use when the user explicitly invokes `$task-brief`, explicitly ask
 
 Turn action-ready conversation into a short, implementation-neutral engineering task definition. Use the information already present in the current conversation and repository; do not behave like a requirements-interview bot or a live conversation log. When called internally by an active `$engineering-workflow`, this is the mandatory visible pre-routing stage.
 
-This Skill is a snapshot step, not the place to brainstorm. It is appropriate when the user has asked to organize the idea into a task, or when the Workflow intent gate has identified a concrete repository outcome. If the user says `先聊一聊`, `还没想好`, `先别整理`, `继续讨论`, or otherwise adds an exploratory idea instead of explicitly correcting the brief, do not regenerate the five items. Keep the last displayed brief as `暂存草案（未确认）`, return control to the Workflow's Exploration mode, and let the user choose ordinary discussion, `进入头脑风暴`, or `整理 brief` later. An exploratory fragment is not a `修改：...` instruction.
+This Skill is a snapshot step, not the place to brainstorm or diagnose an unconfirmed Bug. It is appropriate when the user has asked to organize the idea into a task, when the Workflow intent gate has identified a concrete repository outcome, or when the user explicitly requests a read-only check/diagnosis. A symptom-only Bug report belongs in read-only `$rca-analyze`; an explicit `check-only` request enters this Skill with no-write authorization; an explicit Bug-fix request may enter this Skill but must carry the RCA requirement into `$task-router`. If the user says `先聊一聊`, `还没想好`, `先别整理`, `继续讨论`, or otherwise adds an exploratory idea instead of explicitly correcting the brief, do not regenerate the five items. Keep the last displayed brief as `暂存草案（未确认）`, return control to the Workflow's Exploration mode, and let the user choose ordinary discussion, `进入头脑风暴`, or `整理 brief` later. An exploratory fragment is not a `修改：...` instruction.
 
 When another local exploration Skill is active, do not run Task Brief in parallel. Wait for that Skill's own handoff or for the user to say `整理 brief`; then synthesize the conversation once.
 
@@ -24,6 +24,8 @@ Display exactly these five items, in this order:
 ```
 
 Fold references into `当前上下文/证据` and open questions into `验收标准/待确认项`; do not add a sixth visible heading.
+
+When the brief follows RCA, include the confirmed symptom, reproduction/evidence, root cause, affected pattern, representative cases, and regression matrix in the first and fifth items as appropriate. Do not convert an unconfirmed theory into a requirement.
 
 Preserve explicit user wording such as “只分析”, “只做计划”, “不要修改文件”, or “只检查”. Do not invent requirements, implementation choices, tests, or success metrics. Mark genuinely unknown details as unknown or leave them open.
 

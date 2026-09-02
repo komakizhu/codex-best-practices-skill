@@ -6,7 +6,7 @@ This is the lightweight handoff context for continuing the Codex workflow design
 
 The workflow should be **native-first and human-confirmed**. Custom Skills should not reimplement Codex-native capabilities such as Plan, Review, Worktree, Goal, Colleagues/reviewer/subagent workflows, or the repository's own test/build/lint/typecheck commands.
 
-Use custom Skills only for orchestration gaps: turning natural-language intent into a clear engineering task, routing by complexity, matching a suitable local discussion Skill, optionally comparing materially different technical approaches, and improving the repository environment after real friction is observed. Every transition must be visible; permission-requiring, costly, write-capable, or native stages require confirmation, while a safe model-invocable local discussion Skill may auto-start after a visible notice when the user’s intent is explicit.
+Use custom Skills only for orchestration gaps: turning natural-language intent into a clear engineering task, routing by complexity, reviewing symptom-only Bugs through proportional RCA, matching a suitable local discussion Skill, optionally comparing materially different technical approaches, and improving the repository environment after real friction is observed. Every transition must be visible; permission-requiring, costly, write-capable, or native stages require confirmation, while a safe read-only discussion/RCA stage may auto-start after a visible notice when the user’s intent is explicit.
 
 Keep the system lightweight. Avoid duplicated rules, unnecessary gates, large persistent context, or a custom framework that competes with native Codex features.
 
@@ -24,6 +24,7 @@ Every handoff has four short lines: `已完成`、`下一步`、`需要你确认
 - `继续普通讨论` / `停止当前 Skill` — leave an automatically selected local discussion Skill or return to ordinary discussion.
 - `开始该模式` — enter a user-only local helper when the Workflow has explicitly handed it off; the helper name stays out of normal progress text.
 - `进入 option` / `跳过 option` — opt into or decline extra technical exploration.
+- `整理 brief` / `只保留结论` / `继续调查` — turn a completed RCA into a repair brief, end after analysis, or continue read-only evidence gathering.
 - `确认计划，执行` — accept the native Plan and permit the authorized implementation stage; `执行` is a context-specific shorthand only when the current card explicitly asks for plan approval.
 - `进入复盘` / `跳过复盘` — enter or skip the optional repository retrospective after Medium/Large completion; `复盘` / `跳过` are context-specific short forms.
 - `Plan 已完成` — return after the user has actually completed a host-native `/plan` when the current host could not invoke it.
@@ -38,6 +39,7 @@ Current principles:
 - Prefer coherent prose over fragmented AI-style formatting.
 - The user's current instruction defines scope.
 - Discussion, inspection, analysis, review, or planning does not authorize implementation.
+- Symptom-only Bug reports enter read-only RCA; explicit check/diagnosis requests enter `check-only`; no Bug fix is written before its root cause is established.
 - Explicit limits such as “只分析”, “只做计划”, “不要修改文件”, or “只检查” always take precedence.
 - Verification windows should stay in the background or PiP when possible unless explicitly requested otherwise.
 - Engineering workflows are command-gated and must not activate during casual discussion.
@@ -62,6 +64,7 @@ $engineering-workflow
     ├── exploration gate
     │   ├── ordinary discussion
     │   └── 结构化探索 (auto on clear intent; otherwise opt-in)
+    ├── symptom-only Bug report → $rca-analyze (read-only RCA)
     ├── $task-brief (action-ready or 整理 brief)
     ├── $task-router
     ├── $option-explorer   (optional)
@@ -75,9 +78,9 @@ Plan / Review / Colleagues / Worktree / Goal / Tests
 
 Main orchestration entry. Dormant during ordinary discussion. Activates only when explicitly invoked; a clear repository request without the invocation remains ordinary host handling.
 
-Keep it thin. First separate an exploratory idea from action-ready work, then match a suitable local helper from the current session. A clear request for a safe, model-invocable discussion helper may be auto-started after a visible generic notice; a user-only, high-cost, write-capable, or ambiguous helper gets a short handoff instead. Exploratory input must not cause a five-item brief to be rewritten after every sentence. When the user says `整理 brief`, or the request is already action-ready, synthesize one brief snapshot, then route it to the right workflow, optionally offer solution exploration when a high-value technical fork exists, and offer—not automatically run—a lightweight repository retrospective at the end.
+Keep it thin. First separate an exploratory idea, a symptom-only Bug report, and action-ready work, then match a suitable local helper from the current session. A clear request for a safe, model-invocable discussion or read-only RCA stage may be auto-started after a visible generic notice; a user-only, high-cost, write-capable, or ambiguous helper gets a short handoff instead. Exploratory input must not cause a five-item brief to be rewritten after every sentence. A symptom-only Bug report goes to `$rca-analyze` and does not become a repair brief. When the user says `整理 brief`, or the request is already action-ready, synthesize one brief snapshot, then route it to the right workflow, optionally offer solution exploration when a high-value technical fork exists, and offer—not automatically run—a lightweight repository retrospective at the end.
 
-It must not reimplement native Codex workflows. It must show a handoff and wait after the brief, after routing, before Option, after Option, after native Plan, and before optional retrospective entry. Exploration has its own short handoff and does not enter Router, Plan, or execution until the user explicitly chooses `整理 brief` and confirms the resulting brief. A local Skill’s own hard gates remain authoritative, and the Workflow never auto-chains multiple local Skills.
+It must not reimplement native Codex workflows. It must show a handoff and wait after the brief, after routing, after a completed RCA before repair, before Option, after Option, after native Plan, and before optional retrospective entry. Exploration has its own short handoff and does not enter Router, Plan, or execution until the user explicitly chooses `整理 brief` and confirms the resulting brief. A local Skill’s own hard gates remain authoritative, and the Workflow never auto-chains multiple local Skills.
 
 ### Local Skill matching
 
@@ -86,15 +89,20 @@ Inspect the current session’s available Skills and frontmatter before selectin
 - clear ideation intent (`头脑风暴`, “帮我想方案”, “比较几个方向”) → auto-start an available ideation helper after a generic `结构化探索` notice; its design-approval gate still applies, and any later design-document write needs separate permission;
 - explicit relentless-question intent (“多问我”, “逐个拷问”) → prefer the enabled model-invocable `grill-me` wrapper, falling back to `拷问底层模式` when unavailable; use one question at a time;
 - a local Skill with `disable-model-invocation: true` → user-only; do not auto-start, and provide a generic entry plus a model-invocable alternative;
+- a symptom-only Bug report → use the available `$rca-analyze` route for read-only root-cause analysis; do not treat it as an implementation request;
 - no clear match or multiple equally good matches → ordinary discussion or a short choice handoff.
 
-The auto-call notice names the public capability, why it matches, its discussion/no-routing boundary, and the escape replies `继续普通讨论` / `停止当前 Skill`. Normal output names only `$engineering-workflow`, `$task-brief`, `$task-router`, `$option-explorer`, and `$repo-retrospective`; helper names remain internal unless the user explicitly asks. A local helper call never grants routing, Plan, execution, or writes by itself; if it later proposes a document or other side effect, use a separate confirmation. After it returns, reassess intent rather than silently chaining another helper or entering `$task-brief`.
+The auto-call notice names the public capability, why it matches, its discussion/no-routing boundary, and the escape replies `继续普通讨论` / `停止当前 Skill`. Normal output names only `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`; helper names remain internal unless the user explicitly asks. A local helper or RCA call never grants routing, Plan, execution, or writes by itself; if it later proposes a document or other side effect, use a separate confirmation. After it returns, reassess intent rather than silently chaining another helper or entering `$task-brief`.
+
+A symptom-only Bug report is not action-ready: enter read-only `$rca-analyze`. An explicit request to check, diagnose, investigate, review, or explain a failure without changing files is action-ready `check-only` and enters Task Brief/Router first. Every Bug implementation records a confirmed root cause before writing. Small RCA is proportional and localized; Large RCA must cover representative cases and the shared rule, such as a missing family of language-to-Skill invocation mappings.
 
 For a user-only Skill, use a four-line handoff with `开始该模式` as the entry, `用<可模型调用替代>` as the fallback, and `继续普通讨论` / `取消` as exits. Repeat the exact helper name only when the user already named it and needs the invocation string. Do not claim that a disabled Skill was auto-invoked.
 
 ### `$task-brief`
 
 Turns action-ready, conversational, incomplete, or scattered intent into one engineering task definition with five visible items after any appropriate local exploration Skill. It is a snapshot, not a live transcript and not a brainstorming loop.
+
+When a Bug has already passed through RCA, carry its confirmed evidence, root cause, affected pattern, representative cases, and regression matrix into the brief. A symptom-only report must not enter this Skill before that RCA/repair-intent boundary.
 
 Core fields:
 - Goal
@@ -123,6 +131,8 @@ Authorization modes:
 - `plan-only`
 
 Never upgrade check-only or plan-only into implementation without user authorization.
+
+For any Bug implementation, root-cause analysis is a mandatory pre-write condition. Small Bugs use a focused RCA; systemic Bugs use full RCA with representative cases and a generalization boundary. A failing test or plausible explanation is evidence, not a confirmed root cause.
 
 Classify Small / Medium / Large based on uncertainty, risk, blast radius, rollback difficulty, architecture/compatibility/data impact, and validation complexity. Do not classify mainly by file count or lines changed.
 
@@ -155,6 +165,10 @@ Use Worktree when isolation, parallelism, long-running experimentation, or a lar
 Use Goal when the task has a clear outcome, measurable completion criteria, a repeatable validation loop, and can progress autonomously. Do not force Goal when multiple major human decisions are expected midstream.
 
 Large changes should normally receive native Review against `main` or the correct baseline branch. Before writing after Plan, show the execution handoff with ExecPlan, Worktree, Goal, migration, rollback, and milestone choices.
+
+### `$rca-analyze`
+
+Read-only Bug-review entry for symptom-only reports and an optional full-RCA stage for systemic Bugs. Explicit check/diagnosis requests enter `$task-brief`/`$task-router` as `check-only` and may use this RCA protocol during their read-only investigation. Small RCA confirms the exact failure, evidence, call path, and localized cause. Large RCA identifies representative failures, the shared mechanism, the generalization boundary, and adjacent regression checks. It never silently fixes or enters `$task-brief`; after a confirmed cause, the user chooses `整理 brief`, `只保留结论`, or `继续调查`. A Bug-fix task that was explicitly authorized may use the same RCA protocol as its mandatory pre-write investigation.
 
 ## `$option-explorer`
 
@@ -282,6 +296,6 @@ Keep this distinction explicit in future documentation.
 
 ## Current Maintenance Note
 
-The workflow is now organized as a human-confirmed chain: intent/local-Skill match (safe discussion Skills may auto-start after notice) → exploration gate → action-ready brief → route → investigation/Option decision → native Plan → execution → verification/Review → optional retrospective. Future changes should update the relevant Skill and its acceptance cases together. Existing business code is out of scope, and no commit or publish occurs unless explicitly requested with `定稿` or `发布`.
+The workflow is now organized as a human-confirmed chain: intent/local-Skill match (safe discussion or read-only RCA may auto-start after notice) → exploration or symptom-only Bug review → action-ready brief → route → RCA/investigation/Option decision → native Plan → execution → verification/Review → optional retrospective. Future changes should update the relevant Skill and its acceptance cases together. Existing business code is out of scope, and no commit or publish occurs unless explicitly requested with `定稿` or `发布`.
 
 Use this file as the compact baseline context for future GPT Work sessions. Update it only when the workflow architecture or long-lived rules materially change.

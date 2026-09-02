@@ -1,0 +1,6 @@
+interface:
+  display_name: "RCA Analyze"
+  short_description: "Find and scope bug root causes before repair"
+  default_prompt: "Use $rca-analyze for a symptom-only bug report or explicit RCA request; build a red-capable reproduction, trace the source, classify Small or Large RCA, and wait before any repair handoff."
+policy:
+  allow_implicit_invocation: false
