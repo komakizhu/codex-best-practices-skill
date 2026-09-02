@@ -114,14 +114,14 @@ When investigation has genuinely independent questions, prefer the host’s nati
 
 Use the current host’s actual capability names and semantics. A callable native Plan is the direct path. `update_plan` is a checklist/progress tool; it does not enter or exit native Plan mode and must not be used as its substitute.
 
-When no callable native Plan is available, use the following branches:
+When no callable native Plan is available, separate the Plan-request handoff from the native-Plan-completion handoff. A user-run fallback is allowed only when the current host explicitly exposes or confirms a manual Plan entry. The assistant does not invoke the host UI and must not guess an unverified command.
 
-- If the host explicitly exposes or confirms a user-run `/plan` command, show a handoff with a filled, copyable `Plan 请求`. Populate every field from the current brief and RCA; do not leave known values as placeholders:
+- If the host explicitly exposes or confirms a user-run Plan mode or entry, show a handoff with a filled, copyable `Plan 请求`. Populate every field from the current brief and RCA; do not leave known values as placeholders:
 
-  If the host’s command syntax is unknown, first enter `/plan` and then paste the request below; do not guess additional parameters.
+  If the host’s exact entry syntax is unknown, tell the user to manually enter the host’s Plan mode and paste the request into the current conversation; do not guess additional parameters. Do not ask the user to say `Plan 已完成` before this request has been shown.
 
 ```markdown
-**结论：请先使用宿主的 `/plan` 制定真实 native Plan。**
+**结论：请先在宿主中手动进入 Plan 模式，制定真实 native Plan。**
 
 **Plan 请求：**
 
@@ -146,29 +146,31 @@ When no callable native Plan is available, use the following branches:
 请只制定 native Plan，不修改文件、不执行实现、不提交。
 ```
 
-- If the host has not exposed or confirmed `/plan`, report that the current host has no verifiable native Plan entry. Do not instruct the user to run an unverified command, do not create a prose substitute, and stop before any write.
+The block above defines the field order only. In a live handoff, replace every angle-bracketed item with the actual brief and RCA facts before showing it to the user. The live handoff must explicitly say that the user can manually enter Plan mode and paste the filled request into the current conversation.
 
-For a user-run fallback, require the actual native Plan result to appear in the current conversation or be pasted/attached by the user. A bare `Plan 已完成` is not evidence. Until the result is observable, remain in the no-write handoff:
+- If the host has not exposed or confirmed a user-run Plan mode or entry, report that the current host has no verifiable native Plan entry. Do not instruct the user to run an unverified command, do not create a prose substitute, and stop before any write.
+
+For a user-run fallback, showing the filled request completes only the request handoff; it does not claim that native Plan has completed. The Plan stage completes when the real native Plan result is observable in the current conversation. If the host cannot expose the result in the current conversation, a result returned by the user is also acceptable. When the result is already visible in the current conversation, do not ask the user to paste or upload it again. A bare `Plan 已完成` is not evidence. Until the result is observable, remain in the no-write handoff:
 
 ```markdown
-**结论：RCA 和 Plan 请求已准备好，等待真实 native Plan 结果。**
+**结论：Plan 请求已交接，等待当前会话出现真实 native Plan 结果。**
 
 **已完成：**
-RCA/只读调查和 Plan 请求已准备好。
+RCA/只读调查已完成，完整 Plan 请求已输出。
 
 **下一步：**
-在已确认支持 `/plan` 的宿主中完成 native Plan，并带回真实结果。
+用户手动进入宿主的 Plan 模式，把请求粘贴到当前会话；等待真实结果出现在当前会话。
 
 **需要你确认：**
-返回 Plan 原文或宿主的可观察结果；当前不写文件。
+真实 native Plan 结果可见前不写文件；结果若已在当前会话可见，无需再次回贴或上传。
 
 **怎么回复：**
-- `Plan 已完成`：附上真实结果，进入下一步交接
+- `Plan 已完成`：仅在真实结果已可见时进入下一步交接
 - `确认计划，执行`：仅在 implementation 的真实 Plan 结果交接后继续
 - `取消`：停止
 ```
 
-After an observable native Plan result, use the completion handoff below. For `implementation`, wait for `确认计划，执行`; for `check-only` or `plan-only`, show the result and stop without entering execution.
+After an observable native Plan result, use the completion handoff below. Do not request the same result again when it is already visible in the current conversation. For `implementation`, wait for `确认计划，执行`; for `check-only` or `plan-only`, show the result and stop without entering execution.
 
 ## Option checkpoint
 

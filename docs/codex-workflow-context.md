@@ -27,15 +27,15 @@ Every handoff starts with one bold, single-sentence conclusion. After that, use 
 - `整理 brief` / `只保留结论` / `继续调查` — turn a completed RCA into a repair brief, end after analysis, or continue read-only evidence gathering.
 - `确认计划，执行` — accept the native Plan and permit the authorized implementation stage; `执行` is a context-specific shorthand only when the current card explicitly asks for plan approval.
 - `进入复盘` / `跳过复盘` — enter or skip the optional repository retrospective after Medium/Large completion; `复盘` / `跳过` are context-specific short forms.
-- `Plan 已完成` — return after the user has actually completed a host-native `/plan` when the current host could not invoke it, with the native result visible or returned; a bare phrase is not sufficient.
+- `Plan 已完成` — report after the user has actually completed a host-native Plan when the current host could not invoke it; a real result visible in the current conversation is sufficient and must not be requested again, while a bare phrase is not sufficient.
 - `确认写入` / `只记录` — accept or decline a proposed retrospective change.
 - `取消` — stop the active Workflow without entering the next stage.
 
 ### Native Plan boundary
 
-Native Plan is a host capability, not a prompt-created Skill mode. `update_plan` is a checklist/progress tool and does not enter or exit native Plan. When a callable native Plan is unavailable, the Workflow may provide a user-run `/plan` handoff only when the host explicitly exposes or confirms that command. The handoff must include a filled `Plan 请求` with this fixed field order: `任务目标`, `已确认的 RCA/证据`, `范围`, `非目标`, `约束`, `验收与验证`, followed by `请只制定 native Plan，不修改文件、不执行实现、不提交。` If `/plan` is not confirmed, report the missing capability and stop rather than issuing an unverified command or simulating a Plan.
+Native Plan is a host capability, not a prompt-created Skill mode. `update_plan` is a checklist/progress tool and does not enter or exit native Plan. When a callable native Plan is unavailable, the Workflow may provide a user-run manual Plan handoff only when the host explicitly exposes or confirms that entry. The handoff must first contain a filled `Plan 请求` with this fixed field order: `任务目标`, `已确认的 RCA/证据`, `范围`, `非目标`, `约束`, `验收与验证`, followed by `请只制定 native Plan，不修改文件、不执行实现、不提交。`; the user then manually enters Plan mode and pastes it into the current conversation. If the entry is not confirmed, report the missing capability and stop rather than issuing an unverified command or simulating a Plan.
 
-The user-run fallback is complete only when the native Plan result is observable in the current conversation or returned by the user. `Plan 已完成` without that result does not authorize the next stage or any write.
+The user-run fallback has two distinct checkpoints: the filled Plan request must be shown before the user action, and the fallback Plan is complete only when the real native result is observable in the current conversation or returned by the user. If the result is already visible in the current conversation, do not ask the user to paste or upload it again. `Plan 已完成` without that result does not authorize the next stage or any write.
 
 ## Current AGENTS.md Direction
 
@@ -158,13 +158,13 @@ Do not force Plan, Worktree, Goal, or formal Review for routine Small tasks.
 
 Medium: ordinary bugs, multi-file features, behavior changes, performance/concurrency issues, or moderate refactors.
 
-Medium implementation must complete the host’s actual native Plan after read-only investigation and before any file write. If native Plan is unavailable, use the capability-aware `$task-router` handoff: issue a filled `Plan 请求` only when the host confirms user-run `/plan`, otherwise report the missing entry and stop. A short internal outline or `update_plan` is not a substitute. Require the actual native result before accepting `Plan 已完成`; for `check-only` or `plan-only`, report the result without entering implementation.
+Medium implementation must complete the host’s actual native Plan after read-only investigation and before any file write. If native Plan is unavailable, use the capability-aware `$task-router` handoff: issue a filled `Plan 请求` only when the host confirms a user-run manual Plan entry, otherwise report the missing entry and stop. A short internal outline or `update_plan` is not a substitute. Require the actual native result before accepting `Plan 已完成`; for `check-only` or `plan-only`, report the result without entering implementation.
 
 After implementation, always run real project verification. Use native Review/Colleagues reviewer when the change has meaningful logic, regression, concurrency, performance, or multi-module risk. Do not force heavyweight Review for low-risk Medium changes. After native Plan, implementation waits for the user’s execution confirmation.
 
 Large: migrations, persistence format changes, core architecture changes, protocol/public API migrations, cross-subsystem work, multi-stage changes, rollback-sensitive work, or tasks requiring durable state.
 
-Large should normally use native Plan and a persisted ExecPlan. If native Plan is unavailable, follow the capability-aware `$task-router` handoff; only a host-confirmed user-run `/plan` receives a filled `Plan 请求`, otherwise report the missing entry and stop. Worktree and Goal are conditional, not automatic.
+Large should normally use native Plan and a persisted ExecPlan. If native Plan is unavailable, follow the capability-aware `$task-router` handoff; only a host-confirmed user-run manual Plan entry receives a filled `Plan 请求`, otherwise report the missing entry and stop. Worktree and Goal are conditional, not automatic.
 
 Use Worktree when isolation, parallelism, long-running experimentation, or a large working-tree blast radius makes isolation valuable.
 
@@ -227,7 +227,7 @@ Keep context efficient. Do not turn `AGENTS.md` into a task log.
 
 Whenever Codex already has an appropriate native capability, use it instead of recreating it in a Skill.
 
-- planning → native Plan; user-run `/plan` only when the host confirms it
+- planning → native Plan; user-run manual Plan only when the host confirms it
 - code review → native Review / `/review` or Colleagues reviewer
 - isolation → native Worktree
 - long-running closed-loop execution → native Goal / `/goal`
