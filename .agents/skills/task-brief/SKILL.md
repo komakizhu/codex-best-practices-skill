@@ -13,14 +13,29 @@ When another local exploration Skill is active, do not run Task Brief in paralle
 
 ## Output
 
-Display exactly these five items, in this order:
+Display exactly these five items, in this order. Use Markdown so the first line is easy to scan; keep the confirmation choices inside the fifth item instead of adding a sixth heading:
 
-```text
-目标：                 requested outcome
-当前上下文/证据：       relevant behavior, evidence, and repository area
-约束与授权：            limits, authorization, compatibility, and safety boundaries
-范围/非目标：           included scope and what must remain out of scope
-验收标准/待确认项：     observable completion conditions and any material decisions to confirm; end with the brief confirmation instructions
+```markdown
+**目标：一句话概括要达成的结果。**
+
+**当前上下文/证据：**
+相关行为、证据和仓库范围。
+
+**约束与授权：**
+限制、授权、兼容性和安全边界。
+
+**范围/非目标：**
+包含的范围，以及明确不做的内容。
+
+**验收标准/待确认项：**
+可观察的完成条件，以及需要确认的关键决定。
+
+请确认以上 brief。
+
+- `确认`：继续路由
+- `修改：...`：重写完整 brief
+- `先聊一聊`：冻结草案并进入探索
+- `取消`：停止
 ```
 
 Fold references into `当前上下文/证据` and open questions into `验收标准/待确认项`; do not add a sixth visible heading.
@@ -29,6 +44,6 @@ When the brief follows RCA, include the confirmed symptom, reproduction/evidence
 
 Preserve explicit user wording such as “只分析”, “只做计划”, “不要修改文件”, or “只检查”. Do not invent requirements, implementation choices, tests, or success metrics. Mark genuinely unknown details as unknown or leave them open.
 
-When invoked internally by `$engineering-workflow`, display the complete five-item brief and end the fifth item with this unambiguous handoff: `请确认以上 brief；回复“确认”继续路由，回复“修改：...”重写完整 brief，回复“先聊一聊”冻结草案并进入探索，回复“取消”停止。` Stop. Wait for a subsequent user response: confirmation proceeds to `$task-router`, a correction regenerates the complete brief and waits again, `先聊一聊` freezes the snapshot and returns to Exploration mode, and an explicit cancellation stops the Workflow. Do not invoke `$task-router`, native Plan, or modify files during this wait. When explicitly invoked as `$task-brief`, return the five-item brief only and do not activate `$engineering-workflow` or `$task-router`; a standalone brief never grants routing or write authorization.
+When invoked internally by `$engineering-workflow`, display the complete five-item brief and end the fifth item with `请确认以上 brief。` followed by a separate list: `确认` continues to `$task-router`, `修改：...` regenerates the complete brief, `先聊一聊` freezes the snapshot and enters Exploration mode, and `取消` stops the Workflow. Stop and wait for a subsequent user response. Do not invoke `$task-router`, native Plan, or modify files during this wait. When explicitly invoked as `$task-brief`, return the five-item brief only and do not activate `$engineering-workflow` or `$task-router`; a standalone brief never grants routing or write authorization.
 
 Ask at most one question, and only when the missing answer would clearly change implementation direction, authorization, compatibility, data safety, or acceptance. Otherwise state the assumption briefly in `验收标准/待确认项` and let the confirmed `$task-router` or repository investigation resolve it. An explicit `$task-brief` request returns the brief without implementing the task.

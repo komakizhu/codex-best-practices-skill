@@ -47,20 +47,53 @@ Use uncertainty, impact, risk, reversibility, compatibility, migration/security 
 
 For `check-only`, classify the investigation itself: a directly reproducible failure in one area can be Small, while an unknown call path, multiple modules, environment interaction, or complex evidence trail is Medium or Large. The no-write boundary changes the mode, not the size.
 
-Emit one concise route line and one handoff card before routed work, in the user’s language where practical:
+Emit one concise route summary and one handoff card before routed work, in the user’s language where practical. Put the summary first, then show route metadata and handoff details as separate visual blocks:
 
-```text
-路由：Medium；模式：implementation。需要先定位根因，影响范围集中。
-已完成：    brief 已确认，授权模式与规模已判断
-下一步：    先做必要的只读调查
-需要你确认：确认该路由后才开始调查，并在调查后检查是否触发 Option
-怎么回复：  “确认路由”继续；“修改：...”重新判断；“取消”停止
+```markdown
+**结论：先做必要的只读调查；调查后再检查是否触发 Option。**
+
+**路由：** Medium
+**模式：** implementation
+**类型：** 普通工程任务
+
+**已完成：**
+brief 已确认，授权模式与规模已判断。
+
+**下一步：**
+先做必要的只读调查；调查后再检查是否触发 Option。
+
+**需要你确认：**
+是否按此路由继续？
+
+**怎么回复：**
+- `确认路由`：开始调查
+- `修改：...`：重新判断
+- `取消`：停止
 ```
 
-For an explicit Bug-fix route, make the pre-write condition visible in the route line:
+For an explicit Bug-fix route, put the pre-write condition in the bold summary and show the full route handoff:
 
-```text
-路由：Small / Medium / Large；模式：implementation；类型：Bug 修复。先完成 focused/full RCA，根因确认前不写文件。
+```markdown
+**结论：先完成 full RCA，根因确认前不写文件。**
+
+**路由：** Large
+**模式：** implementation
+**类型：** Bug 修复
+**限制：** 根因确认前不写文件
+
+**已完成：**
+已识别为 Bug 修复请求，已确定需要 Large 级别的完整 RCA。
+
+**下一步：**
+先完成 full RCA；根因确认前不进入 native Plan 或修改文件。
+
+**需要你确认：**
+确认该路由后开始只读调查。
+
+**怎么回复：**
+- `确认路由`：开始 full RCA
+- `修改：...`：重新判断路由
+- `取消`：停止
 ```
 
 Stop after the card. Do not invoke `$option-explorer`, native Plan, Worktree, Goal, Review, or modify files while waiting. Do not narrate a second workflow state machine; this is the one route handoff required at this boundary.
@@ -69,49 +102,142 @@ Stop after the card. Do not invoke `$option-explorer`, native Plan, Worktree, Go
 
 **Small** — Investigate only what is necessary. For a Bug in `implementation`, complete the focused RCA gate above before making the smallest change; for a non-Bug task, the minimal change may follow the route handoff. In `check-only` or `plan-only`, do not write. Run the project’s real targeted tests, lint, typecheck, build, or behavior checks; inspect the actual diff; then follow `AGENTS.md` for `git status` and the concise diff summary. Do not create an ExecPlan or Goal, and do not commit or publish automatically. Formal Review is normally unnecessary unless requested or the risk grows.
 
-**Medium** — Investigate first. For a Bug, the read-only investigation must complete the focused/full RCA gate and establish the root cause before Plan or any write. For `implementation`, complete the necessary read-only investigation, then invoke the host’s actual native Plan and wait for it to complete successfully before modifying any file. A hand-written outline or `update_plan` is not proof that native Plan mode was used. If native Plan is unavailable, say so, provide a ready `/plan` handoff, and stop before any write; do not silently replace it with this skill’s prose. For `check-only`, continue only with independent read-only checks that do not require the missing Plan, and report the limitation; for `plan-only`, return the handoff/plan and stop without writes. After a completed native Plan for `implementation`, display the plan outcome and stop for `确认计划，执行`; `修改计划` regenerates the handoff and `取消` stops. Only after that confirmation may implementation continue. `check-only` reports findings and stops, and `plan-only` reports the plan and stops. Run real verification for implementation. Use native Review or native Colleagues reviewer when there is meaningful logic, behavior, multi-module, concurrency, performance, or regression risk; do not force heavyweight Review for a low-risk Medium. Review never replaces tests; fix only confirmed findings and re-review when needed. If native Review is unavailable, provide the native handoff and do not self-review under another name.
+**Medium** — Investigate first. For a Bug, the read-only investigation must complete the focused/full RCA gate and establish the root cause before Plan or any write. For `implementation`, complete the necessary read-only investigation, then invoke the host’s actual native Plan and wait for it to complete successfully before modifying any file. A hand-written outline or `update_plan` is not proof that native Plan mode was used. If the current host cannot expose native Plan, follow `Native Plan availability and handoff` below and stop before any write; do not silently replace it with this skill’s prose. For `check-only`, continue only with independent read-only checks that do not require the missing Plan, and report the limitation; for `plan-only`, return the handoff/plan and stop without writes. After a completed native Plan for `implementation`, display the plan outcome and stop for `确认计划，执行`; `修改计划` regenerates the handoff and `取消` stops. Only after that confirmation may implementation continue. `check-only` reports findings and stops, and `plan-only` reports the plan and stops. Run real verification for implementation. Use native Review or native Colleagues reviewer when there is meaningful logic, behavior, multi-module, concurrency, performance, or regression risk; do not force heavyweight Review for a low-risk Medium. Review never replaces tests; fix only confirmed findings and re-review when needed. If native Review is unavailable, provide the native handoff and do not self-review under another name.
 
-For either Medium or Large, when native Plan is unavailable, the handoff must say exactly how to continue: `下一步：请在宿主中执行 /plan；完成真实 native Plan 后回复“Plan 已完成”交回本 Workflow；回复“取消”停止。` Do not treat a prose outline or a user’s “我想好了” as native Plan completion.
+For either Medium or Large, when native Plan is unavailable, use `Native Plan availability and handoff` below. Do not emit a bare `/plan`, and do not treat a prose outline or a user’s “我想好了” as native Plan completion.
 
 When investigation has genuinely independent questions, prefer the host’s native Colleagues/sub-agent parallel workflow if it is available and permitted. Do not create parallel work merely for ceremony, and never claim it ran without an actual successful invocation.
 
-**Large** — Complete full RCA before implementation planning is allowed to turn into a write: representative failures, shared mechanism, generalization boundary, and regression matrix must be explicit. Then use native Plan first. If Plan is unavailable, say so, provide a precise `/plan` handoff, and stop any implementation, ExecPlan persistence, Worktree, Goal, or Review; a check-only task may continue only with independent read-only checks that do not need the plan. After a completed native Plan for `implementation`, display its outcome and stop for `确认计划，执行`; include the proposed ExecPlan path, Worktree/Goal use, milestones, migration, and rollback choices in that card. `修改计划` regenerates it and `取消` stops. Only after confirmation may the route persist a living ExecPlan using the repository’s convention (default: `docs/exec-plans/YYYY-MM-DD-<task>.md`) and use native Worktree or Goal when the current host actually exposes and permits them. Record goal/non-goals, current state, scope, constraints, risks, milestones and validation, compatibility/migration, rollback, progress, discoveries, decisions, acceptance criteria, and stop conditions; update progress as work changes. A Goal or Worktree must not be inferred or simulated: if the host requires an explicit user/UI action or no callable native entry exists, provide a precise handoff and stop. Never replace a Worktree with a copied directory or ordinary branch, or a Goal with an open-ended instruction. Verify every milestone, run final real checks, and use native Review against the actual base (normally `main`) before acceptance. In `check-only`, do not persist an ExecPlan or alter code; report the read-only findings. In `plan-only`, show the plan and stop without writing an ExecPlan, creating Worktree/Goal, implementing, or reviewing.
+**Large** — Complete full RCA before implementation planning is allowed to turn into a write: representative failures, shared mechanism, generalization boundary, and regression matrix must be explicit. Then use native Plan first. If the current host cannot expose native Plan, follow `Native Plan availability and handoff` below and stop any implementation, ExecPlan persistence, Worktree, Goal, or Review; a check-only task may continue only with independent read-only checks that do not need the plan. After a completed native Plan for `implementation`, display its outcome and stop for `确认计划，执行`; include the proposed ExecPlan path, Worktree/Goal use, milestones, migration, and rollback choices in that card. `修改计划` regenerates it and `取消` stops. Only after confirmation may the route persist a living ExecPlan using the repository’s convention (default: `docs/exec-plans/YYYY-MM-DD-<task>.md`) and use native Worktree or Goal when the current host actually exposes and permits them. Record goal/non-goals, current state, scope, constraints, risks, milestones and validation, compatibility/migration, rollback, progress, discoveries, decisions, acceptance criteria, and stop conditions; update progress as work changes. A Goal or Worktree must not be inferred or simulated: if the host requires an explicit user/UI action or no callable native entry exists, provide a precise handoff and stop. Never replace a Worktree with a copied directory or ordinary branch, or a Goal with an open-ended instruction. Verify every milestone, run final real checks, and use native Review against the actual base (normally `main`) before acceptance. In `check-only`, do not persist an ExecPlan or alter code; report the read-only findings. In `plan-only`, show the plan and stop without writing an ExecPlan, creating Worktree/Goal, implementing, or reviewing.
+
+## Native Plan availability and handoff
+
+Use the current host’s actual capability names and semantics. A callable native Plan is the direct path. `update_plan` is a checklist/progress tool; it does not enter or exit native Plan mode and must not be used as its substitute.
+
+When no callable native Plan is available, use the following branches:
+
+- If the host explicitly exposes or confirms a user-run `/plan` command, show a handoff with a filled, copyable `Plan 请求`. Populate every field from the current brief and RCA; do not leave known values as placeholders:
+
+  If the host’s command syntax is unknown, first enter `/plan` and then paste the request below; do not guess additional parameters.
+
+```markdown
+**结论：请先使用宿主的 `/plan` 制定真实 native Plan。**
+
+**Plan 请求：**
+
+**任务目标：**
+<目标>
+
+**已确认的 RCA/证据：**
+<根因与证据>
+
+**范围：**
+<范围>
+
+**非目标：**
+<非目标>
+
+**约束：**
+<约束>
+
+**验收与验证：**
+<验收标准>
+
+请只制定 native Plan，不修改文件、不执行实现、不提交。
+```
+
+- If the host has not exposed or confirmed `/plan`, report that the current host has no verifiable native Plan entry. Do not instruct the user to run an unverified command, do not create a prose substitute, and stop before any write.
+
+For a user-run fallback, require the actual native Plan result to appear in the current conversation or be pasted/attached by the user. A bare `Plan 已完成` is not evidence. Until the result is observable, remain in the no-write handoff:
+
+```markdown
+**结论：RCA 和 Plan 请求已准备好，等待真实 native Plan 结果。**
+
+**已完成：**
+RCA/只读调查和 Plan 请求已准备好。
+
+**下一步：**
+在已确认支持 `/plan` 的宿主中完成 native Plan，并带回真实结果。
+
+**需要你确认：**
+返回 Plan 原文或宿主的可观察结果；当前不写文件。
+
+**怎么回复：**
+- `Plan 已完成`：附上真实结果，进入下一步交接
+- `确认计划，执行`：仅在 implementation 的真实 Plan 结果交接后继续
+- `取消`：停止
+```
+
+After an observable native Plan result, use the completion handoff below. For `implementation`, wait for `确认计划，执行`; for `check-only` or `plan-only`, show the result and stop without entering execution.
 
 ## Option checkpoint
 
 After the confirmed route’s necessary read-only investigation, explicitly evaluate the three `$option-explorer` conditions. Do not enter it immediately after the route merely because the task is Large. If the conditions are met, stop before native exploration and show:
 
-```text
-选项检查：发现两个（或更多）实质不同、成本都高且暂无明显赢家的方案。
-下一步：可进入 $option-explorer，代价是额外的探索时间/Token。
-请确认：回复“进入 option”探索，或“跳过 option”直接进入下一阶段。
+```markdown
+**结论：当前存在需要额外探索的高成本技术分叉。**
+
+**选项检查：**
+发现两个（或更多）实质不同、成本都高且暂无明显赢家的方案。
+
+**下一步：**
+可进入 `$option-explorer`，预计增加探索时间/Token。
+
+**请确认：**
+现在是否进入 Option？
+
+- `进入 option`：开始探索
+- `跳过 option`：直接进入下一阶段
 ```
 
 `进入 option` is the only permission to invoke the optional Skill. `跳过 option` means continue to the required native Plan or direct Small route and must be acknowledged with the next-stage handoff. If the conditions are not met, state `Option 不触发` and name the next stage, then wait for `确认继续` before entering it.
 
 When Option does not trigger, make the next handoff explicit instead of silently continuing:
 
-```text
-选项检查：Option 不触发，当前证据不足以证明存在高成本且无明显赢家的分叉。
-下一步：进入 <下一阶段>。
-需要你确认：确认跳过 Option 并进入 <下一阶段>。
-怎么回复：  “确认继续”进入；“修改：...”补充约束或重判；“取消”停止
+```markdown
+**结论：Option 不触发，当前修复路径明确。**
+
+**选项检查：**
+当前证据不足以证明存在高成本且无明显赢家的分叉。
+
+**下一步：**
+进入 <下一阶段>。
+
+**需要你确认：**
+确认跳过 Option 并进入 <下一阶段>。
+
+**怎么回复：**
+- `确认继续`：进入下一阶段
+- `修改：...`：补充约束或重新判断
+- `取消`：停止
 ```
 
 After `选择 A` or `选择 B` (the shortest aliases `A` or `B` are acceptable), show the next native Plan handoff and wait for `确认进入 Plan` (or `修改：...` / `取消`). `回到 Plan` already expresses that choice, but still requires the same Plan handoff before the native stage starts.
 
-## Native Plan handoff
+## Native Plan completion handoff
 
-When a required native Plan completes for `implementation`, show the result before any write:
+When a required native Plan completes and its result is observable, show the result before any write:
 
-```text
-已完成：    native Plan 已完成，关键范围/风险/验证已列出
-下一步：    进入已授权的 implementation stage
-需要你确认：接受该 Plan，并确认 ExecPlan、Worktree、Goal、迁移/回滚等已列出的选择
-怎么回复：  “确认计划，执行”（或简写“执行”）继续；“修改计划”重做交接；“取消”停止
+```markdown
+**结论：native Plan 已完成，等待你确认后进入 implementation。**
+
+**已完成：**
+native Plan 已完成，关键范围、风险和验证已列出。
+
+**下一步：**
+进入已授权的 implementation stage。
+
+**需要你确认：**
+接受该 Plan，并确认 ExecPlan、Worktree、Goal、迁移/回滚等已列出的选择。
+
+**怎么回复：**
+- `确认计划，执行`：继续
+- `执行`：简写为确认计划并继续
+- `修改计划`：重做交接
+- `取消`：停止
 ```
 
-For `check-only` or `plan-only`, show the Plan/findings and stop without asking for execution. If Plan is unavailable, use the `/plan` handoff above and wait for `Plan 已完成` or `取消`.
+For `check-only` or `plan-only`, show the Plan/findings and stop without asking for execution. If a user-run fallback was used, do not treat `Plan 已完成` without the actual result as a completed Plan.
 
 ## Truthfulness and finish
 

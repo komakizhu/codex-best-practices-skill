@@ -17,20 +17,42 @@ Do not invoke it merely because a task is Large, unfamiliar, or interesting. Bef
 
 When called internally without an already-confirmed `进入 option` handoff, stop at this card before invoking any exploration capability:
 
-```text
-选项检查：满足“实质不同 + 无明显赢家 + 错选代价高”。
-下一步：进入 $option-explorer，预计增加探索时间/Token。
-请确认：回复“进入 option”开始，或“跳过 option”回到正常 Plan。
+```markdown
+**结论：当前存在需要额外探索的高成本技术分叉。**
+
+**选项检查：**
+满足“实质不同 + 无明显赢家 + 错选代价高”。
+
+**下一步：**
+进入 `$option-explorer`，预计增加探索时间/Token。
+
+**请确认：**
+现在是否进入 Option？
+
+- `进入 option`：开始探索
+- `跳过 option`：回到正常 Plan
 ```
 
 `进入 option` is required for internal entry. The caller’s confirmed Option card satisfies this requirement; do not ask for the same confirmation a second time. An explicit direct `$option-explorer` invocation already counts as opt-in, but still requires the three conditions to be checked; if they do not hold, return the compact reason and do not explore.
 
 After explicit opt-in, use only the native exploration capability actually exposed by the current host. Give each independent exploration the same task brief, constraints, decision criteria, and required evidence; keep the questions disjoint. Synthesize trade-offs, assumptions, risks, and a recommendation, then stop with this selection handoff:
 
-```text
-探索完成：方案 A/B（或更多）及其证据、取舍和推荐已列出。
-下一步：等待你选择方案，再回到所需的 native Plan/执行路线。
-请回复： “选择 A”、“选择 B”（也可只回 “A”/“B”）、“回到 Plan”或“取消”。
+```markdown
+**结论：探索完成，方案取舍和推荐已列出。**
+
+**探索完成：**
+方案 A/B（或更多）及其证据、取舍和推荐已列出。
+
+**下一步：**
+等待你选择方案，再回到所需的 native Plan/执行路线。
+
+**请回复：**
+- `选择 A`：选择方案 A
+- `选择 B`：选择方案 B
+- `A`：使用简写选择方案 A
+- `B`：使用简写选择方案 B
+- `回到 Plan`：返回 Plan
+- `取消`：停止
 ```
 
 Do not present the exploration as a native Review or Plan. A selected option authorizes the direction only; after selection, return to the next native Plan handoff and wait for `确认进入 Plan` before entering it. It does not authorize file writes or bypass a required native Plan.

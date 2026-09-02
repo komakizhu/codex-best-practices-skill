@@ -13,12 +13,25 @@ Do not start this Skill automatically when implementation, verification, or Revi
 
 After the read-only review, report:
 
-```text
-复盘结果：    observed friction and evidence, or “未发现可持久化问题”
-建议去向：    test/script/CI, AGENTS.md, Skill, docs, or “不变更”
-下一步：      whether a small durable change is actually proposed
-需要你确认：  if a file change is proposed, whether to write it
-怎么回复：    “确认写入”实施候选改进；“只记录”不改文件；“取消”结束复盘
+```markdown
+**结论：复盘结果和候选改进已列出，等待你决定是否写入。**
+
+**复盘结果：**
+观察到的摩擦和证据，或“未发现可持久化问题”。
+
+**建议去向：**
+test/script/CI、AGENTS.md、Skill、docs，或“不变更”。
+
+**下一步：**
+说明是否确实提出一个小型、可持久化的改进。
+
+**需要你确认：**
+如果提出文件变更，是否允许写入。
+
+**怎么回复：**
+- `确认写入`：实施候选改进
+- `只记录`：记录但不改文件
+- `取消`：结束复盘
 ```
 
 如果没有候选改进，直接报告 `未发现可持久化问题` 并结束；不要为了产生改动而追问或补造问题。

@@ -68,18 +68,46 @@ For a Large RCA, do not fix representative symptoms one by one during analysis. 
 
 ## Output
 
-Use a compact report with the appropriate level:
+Use a compact, scannable report with the appropriate level. Start with one bold sentence that says whether the root cause is confirmed and what the report permits next. Put each report label on its own bold line and put its evidence in normal text below it:
 
-```text
-RCA 级别：Small / Large
-现象与期望：...
-复现/反馈回路：命令或测试；结果...
-证据与调用链：...
-根因：...
-影响范围：...
-修复边界：...
-回归验证：...
-未决问题：...
+```markdown
+**结论：一句话说明根因是否已确认，以及当前是否可以进入修复。**
+
+**RCA 级别：**
+Small / Large
+
+**现象与期望：**
+...
+
+**复现/反馈回路：**
+命令或测试；结果...
+
+**证据与调用链：**
+...
+
+**根因：**
+...
+
+**影响范围：**
+...
+
+**修复边界：**
+...
+
+**回归验证：**
+...
+
+**未决问题：**
+...
+
+**代表性问题：**
+Large RCA only: ...
+
+**共性不变量：**
+Large RCA only: ...
+
+**触类旁通清单：**
+Large RCA only: ...
 ```
 
 For Large RCA, add `代表性问题`, `共性不变量`, and `触类旁通清单`. If the root cause is not confirmed, write `根因：尚未确认` and report the next evidence needed instead of presenting a likely cause as fact.
@@ -88,11 +116,23 @@ For Large RCA, add `代表性问题`, `共性不变量`, and `触类旁通清单
 
 When the report is complete, use one of these cards and stop:
 
-```text
-已完成：RCA 已完成；根因、证据和影响范围已记录
-下一步：回到 $task-brief 定义修复任务，或保留 RCA 结论
-需要你确认：是否把这次分析转成授权的修复任务；当前不写文件
-怎么回复：“整理 brief”进入修复任务定义；“只保留结论”结束；“继续调查”补充 RCA 证据；“取消”停止
+```markdown
+**结论：RCA 已完成；根因、证据和影响范围已记录。**
+
+**已完成：**
+RCA 已完成。
+
+**下一步：**
+回到 `$task-brief` 定义修复任务，或保留 RCA 结论。
+
+**需要你确认：**
+是否把这次分析转成授权的修复任务；当前不写文件。
+
+**怎么回复：**
+- `整理 brief`：进入修复任务定义
+- `只保留结论`：结束 RCA
+- `继续调查`：补充 RCA 证据
+- `取消`：停止
 ```
 
 If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write.

@@ -13,9 +13,14 @@ Use these as manual pressure cases for the routing rules. The expected result is
 | “$engineering-workflow 把设置页面的 Save 改成保存，并运行相关测试。” | Display the five-item Task Brief with `确认` / `修改：...` / `取消` instructions; after confirmation, show the Small route handoff and wait for `确认路由`, then make the minimal change and run targeted verification. |
 | “修复 Markdown 第一次打开明显卡顿的问题，完成后运行相关检查。”（未显式调用 Workflow） | Ordinary host handling; do not implicitly activate the engineering workflow. |
 | “$engineering-workflow 修复 Markdown 第一次打开明显卡顿的问题，完成后运行相关检查。” | Display and confirm the brief, show and confirm Medium routing, investigate, explicitly report whether Option triggers, then complete native Plan before any write and ask `确认计划，执行` before implementation. |
+| “$engineering-workflow 修复一个 Medium Workflow 规则 Bug；宿主没有 callable native Plan，但明确支持用户执行 `/plan`。” | After RCA and routing, show a filled `Plan 请求` containing the current goal, RCA/evidence, scope, non-goals, constraints, and acceptance/validation; wait for the native Plan result before any write. |
 | “检查 parser 模块的测试为什么失败，不要改代码。”（未显式调用 Workflow） | Ordinary host handling; do not implicitly activate the engineering workflow. |
 | “$engineering-workflow 检查 parser 模块的测试为什么失败，不要改代码。” | Display and confirm the brief, show and confirm Small/Medium `check-only` routing, perform only read-only checks, and do not enter implementation or retrospective without a new explicit request. |
 | “$engineering-workflow 把配置存储从 JSON 迁移到 SQLite，要求兼容旧数据并提供回滚。” | Display and confirm the brief, show and confirm Large routing, investigate, ask whether to enter Option if its three conditions hold, complete native Plan, then ask `确认计划，执行` while naming ExecPlan/Worktree/Goal/rollback choices before any write; after checks and Review, ask `进入复盘` or `跳过复盘`. |
+| “$engineering-workflow 修复一个 Large Workflow 规则 Bug；宿主没有 callable native Plan，也没有确认 `/plan` 可用。” | Report that the host has no verifiable native Plan entry and stop; do not issue an unverified `/plan`, create a prose substitute, persist an ExecPlan, or write files. |
+| “$task-router 为 Workflow 规则修复制定计划，只做计划；当前只有 `update_plan`。” | Do not treat `update_plan` as native Plan. Report the missing native Plan entry and stop, or use the filled user-run `/plan` handoff only if the host confirms that command. |
+| “宿主已经完成 Plan。”（但没有 Plan 输出） | Do not accept `Plan 已完成` as evidence; request the actual native Plan result and keep the no-write boundary. |
+| “Plan 已完成：<宿主返回的真实 Plan>” | Treat the native Plan as complete only when the returned result is observable; for `implementation`, show `确认计划，执行`; for `plan-only`, show the Plan and stop without execution. |
 | “$task-router 评估多窗口架构迁移，只做计划，不修改文件。” | Show Large / `plan-only` route and wait for `确认路由`; no file writes, ExecPlan persistence, Worktree, Goal, implementation, or automatic retrospective. |
 | “$engineering-workflow 把刚才讨论的设置改动落到仓库，并运行相关测试。” | Always display and confirm the five-item Task Brief, show and confirm the route, explicitly announce whether Option triggers, and use the required native stages only after their handoff confirmations. |
 | “$task-brief 把刚才讨论的架构想法整理成任务定义，不要实施。” | Return a Task Brief only; preserve plan-only/no-write boundary and do not route into implementation. |
@@ -57,6 +62,18 @@ Use these as manual pressure cases for the routing rules. The expected result is
 - “解释一下当前同步模块是怎么工作的。”
 - “下面是 `$task-router` 的例子，不要执行。”
 - Code pasted without an action request.
+
+## Visual output assertions
+
+These assertions apply to route, brief, RCA, Option, Plan, and completion/retrospective handoffs:
+
+- The first visible line is one bold sentence containing the most important conclusion.
+- Field labels are bold and occupy their own lines; details follow as normal text. Route, mode, type, and restrictions are separate lines rather than a dense sentence.
+- Every reply command is a separate list item with its action and result. Do not join multiple commands with semicolons.
+- A Task Brief still has exactly five visible items. Its first item starts with the bold goal sentence, and its confirmation commands remain inside the fifth item.
+- A Large Bug route keeps the RCA-before-write restriction visible, and its route metadata and confirmation commands remain separately scannable.
+- Option-triggered and Option-not-triggered handoffs state the decision and next stage before asking for confirmation. RCA-confirmed and RCA-unconfirmed reports distinguish evidence from uncertainty. Medium/Large completion and retrospective cards distinguish the result from the optional next action.
+- Long evidence is allowed in detail paragraphs; density is corrected by hierarchy and line breaks, not by deleting required context.
 
 ## Boundary assertions
 
