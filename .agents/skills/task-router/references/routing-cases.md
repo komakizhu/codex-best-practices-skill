@@ -82,15 +82,15 @@ Use these as manual pressure cases for the routing rules. The expected result is
 > **请回复：**
 `选择 A`
 
-> 按在线兼容路径进入 Plan
+> 你选择在线兼容路径。Codex 接下来会按这个方向提交 Plan，不会直接修改文件。
 
 `选择 B`
 
-> 按维护窗路径进入 Plan
+> 你选择维护窗路径。Codex 接下来会按这个方向提交 Plan，不会直接修改文件。
 
 `取消`
 
-> 停止
+> 你要停止 Option。Codex 不会选择方案，也不会进入 Plan 或修改文件。
 
 **Step 2 — User selection:** `选择 A`
 
@@ -229,15 +229,15 @@ No completion receipt or duplicate execution confirmation is requested. Implemen
 
 `确认路由`
 
-> 开始 Route 规定的调查流程
+> 你同意这条 Route。Codex 接下来会先做只读调查，不会马上修改文件。
 
 `修改：...`
 
-> 重新确认 Route 判断
+> 你要补充或修改这条 Route。Codex 会根据你的补充重新判断，然后再请你确认。
 
 `取消`
 
-> 停止
+> 你要停止当前任务。Codex 不会开始调查或修改文件。
 
 ### 场景四：RCA 未确认根因
 
@@ -314,11 +314,11 @@ No completion receipt or duplicate execution confirmation is requested. Implemen
 
 `进入 option`
 
-> 开始 Option 对比
+> 你同意进入 Option。Codex 接下来会比较候选方案，不会直接修改文件。
 
 `跳过 option`
 
-> 直接进入 Plan
+> 你不需要额外比较。Codex 接下来会直接进入 Plan，不会因为跳过 Option 而修改文件。
 
 ### 场景八：需要手动打开 Plan
 
@@ -328,7 +328,9 @@ No completion receipt or duplicate execution confirmation is requested. Implemen
 
 **改后（期望）**
 
-> 这里需要你手动打开 Plan。我已经把 Plan prompt 写好；你打开 Plan 后贴进去即可。
+**结论：请先在宿主中手动打开 Plan；我已经把可以直接粘贴的 Plan prompt 写好。**
+
+请在宿主 UI 中打开 Plan，把下面的内容粘贴到当前对话。native Plan 结果出现前，Codex 不会修改文件。
 
 ```text
 请为“停止录音后文字被误删”制定实施 Plan。
@@ -366,15 +368,15 @@ Plan 需要说明：
 
 `确认计划，执行`
 
-> 接受这份 Plan，开始 implementation 与验证
+> 你接受这份 Plan，并授权 Codex 开始 implementation。Codex 接下来会修改文件并运行验证。
 
 `修改计划`
 
-> 先调整 Plan 再继续
+> 你不同意当前 Plan。Codex 会先停在这里，按照你的要求重新整理计划，不会修改文件。
 
 `取消`
 
-> 停止任务
+> 你要停止当前任务。Codex 不会执行这份 Plan，也不会修改文件。
 
 ### 场景十：完成报告（含验收）
 
@@ -400,15 +402,15 @@ Plan 需要说明：
 
 `进入复盘`
 
-> 继续复盘并给出可落地改进建议
+> 你要检查这次任务是否暴露了可重复的仓库问题。Codex 会进入复盘，但不会默认修改文件。
 
 `跳过复盘`
 
-> 返回最终摘要并结束
+> 你不需要复盘。Codex 会保留完成报告并结束当前任务。
 
 `取消`
 
-> 结束 Workflow
+> 你要停止当前 Workflow。Codex 不会进入复盘或继续其他操作。
 
 ## Should enter RCA
 

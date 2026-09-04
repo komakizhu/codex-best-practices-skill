@@ -51,6 +51,17 @@ Display exactly these five items, in this order. Use Markdown so the first line 
 
 Fold references into `当前上下文/证据` and open questions into `验收标准/待确认项`; do not add a sixth visible heading.
 
+## 真实回复写作规则
+
+Brief 的正文不是字段值的堆叠，而是让用户快速看懂“要解决什么、目前知道什么、接下来谁做什么”。遵循以下规则：
+
+- 先写一句明确结论，再补充证据、限制、范围和验收条件。
+- 每段只回答一个主要问题；有两个以上并列事实时，用 bullet 拆开。
+- 每个动作都写清主语，例如“你确认后，Codex 会……”“测试会验证……”“代码需要……”。不要只写“已完成”“进入下一阶段”。
+- 保留 Brief、Route、RCA、Plan、Option 等关键术语；第一次出现时，用一句短话说明它在当前步骤中的作用。
+- 把内部流程状态翻译成用户能做的选择，不把“继续路由”“状态已冻结”等内部说法直接当作正文。
+- 口令和说明继续使用独立段落；说明以 `> ` 开头，确保复制口令时不会把解释一起带走。
+
 When the brief follows RCA, include the confirmed symptom, reproduction/evidence, root cause, affected pattern, representative cases, and regression matrix in the first and fifth items as appropriate. Do not convert an unconfirmed theory into a requirement.
 
 Preserve explicit user wording such as “只分析”, “只做计划”, “不要修改文件”, or “只检查”. Do not invent requirements, implementation choices, tests, or success metrics. Mark genuinely unknown details as unknown or leave them open.

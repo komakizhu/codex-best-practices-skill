@@ -18,42 +18,83 @@ On the current local host, Codex loads installed Skills from `~/.codex/skills`; 
 
 Every handoff starts with one bold, single-sentence conclusion. After that, use the four semantic fields `已完成`、`下一步`、`需要你确认`、`怎么回复`; each field name occupies its own bold line, and its details use normal text. Reply commands are single-line code spans, each on its own line without list markers, followed by one blank line and an explanation paragraph beginning with `> `. Route, mode, type, and restrictions are separate metadata lines.
 
-`确认` / `确认路由`
-accept the current handoff only.
+正文也要遵守同一套可读性规则：先说结论，再说明事实、影响、下一步和边界；每段只讲一个主要意思，多个并列事实用 bullet；每个动作写明主语（你、Codex、代码、测试或宿主）。Brief、Route、RCA、Plan、Option、implementation 等关键术语保留，第一次出现时用短句说明用途；不会影响用户选择的内部状态不写进正文。
+
+`确认`
+
+> 你同意当前这张交接卡。Codex 会继续当前阶段，但不会因此自动获得后续阶段的权限。
+
+`确认路由`
+
+> 你同意当前 Route。Codex 会开始 Route 规定的调查，但不会因此直接修改文件。
 
 `修改：...`
 
-> correct the current handoff and regenerate it.
+> 你要补充或修改当前判断。Codex 会按照你的说明重新整理这张交接卡，再请你确认。
 
-`进入结构化探索` / `继续讨论` / `整理 brief`
-choose structured ideation, ordinary discussion, or the boundary back to a task brief when the idea is still exploratory.
+`进入结构化探索`
 
-`继续普通讨论` / `停止当前 Skill`
-leave an automatically selected local discussion Skill or return to ordinary discussion.
+> 你选择结构化探索。Codex 会按目标、场景和约束梳理方向，不会进入 Route、Plan 或修改文件。
+
+`继续讨论`
+
+> 你想继续补充想法。Codex 会继续讨论，不会更新 Brief、Route 或修改文件。
+
+`整理 brief`
+
+> 你要把已经讨论的内容整理成任务摘要。Codex 会生成新的 Brief，然后请你确认。
+
+`继续普通讨论`
+
+> 你想回到普通对话。Codex 会继续讨论，不会自动进入其他流程。
+
+`停止当前 Skill`
+
+> 你要停止当前讨论方式。Codex 会结束这次讨论，不会继续调用它。
 
 `开始该模式`
 
-> enter a user-only local helper when the Workflow has explicitly handed it off; the helper name stays out of normal progress text.
+> 你要启动已经交给你的用户专用流程。Codex 会按这条流程继续，并保留必要的确认和不写边界。
 
-`进入 option` / `跳过 option`
-opt into or decline extra technical exploration.
+`进入 option`
 
-`整理 brief` / `只保留结论` / `继续调查`
-turn a completed RCA into a repair brief, end after analysis, or continue read-only evidence gathering.
+> 你同意额外比较技术方案。Codex 会比较成本、风险和回滚方式，不会直接修改文件。
+
+`跳过 option`
+
+> 你不需要额外比较。Codex 会回到正常 Plan 流程，不会因为跳过 Option 而修改文件。
+
+`只保留结论`
+
+> 你只需要当前 RCA 的分析结果。Codex 会结束分析，不会进入修复或修改文件。
+
+`继续调查`
+
+> 你认为 RCA 证据还不够。Codex 会继续只读调查，不会修改文件。
 
 `确认计划，执行`
 
-> accept the native Plan and permit the authorized implementation stage; `执行` is a context-specific shorthand only when the current card explicitly asks for plan approval.
+> 你接受 native Plan，并授权 Codex 进入 implementation；只有当前卡片明确要求执行时，`执行` 才是它的简写。
 
-`进入复盘` / `跳过复盘`
-enter or skip the optional repository retrospective after Medium/Large completion; `复盘` / `跳过` are context-specific short forms.
+`进入复盘`
 
-`确认写入` / `只记录`
-accept or decline a proposed retrospective change.
+> 你要检查这次任务是否暴露了可重复的仓库问题。Codex 会开始复盘，但不会默认修改文件。
+
+`跳过复盘`
+
+> 你不需要复盘。Codex 会保留完成报告并结束当前任务；`跳过` 只在当前卡片明确提供复盘选择时生效。
+
+`确认写入`
+
+> 你同意实施复盘中提出的候选改进。Codex 会只修改已说明的范围，并运行相关验证。
+
+`只记录`
+
+> 你只想保留复盘记录。Codex 会记录候选改进，但不会修改文件。
 
 `取消`
 
-> stop the active Workflow without entering the next stage.
+> 你要停止当前 Workflow。Codex 不会进入下一阶段，也不会修改文件。
 
 ### Native Plan boundary
 

@@ -17,32 +17,34 @@ After the read-only review, report:
 **结论：复盘结果和候选改进已列出，等待你决定是否写入。**
 
 **复盘结果：**
-观察到的摩擦和证据，或“未发现可持久化问题”。
+Codex 已经列出观察到的仓库摩擦、对应证据和可能的长期改进；如果没有可重复的问题，会明确写出“未发现可持久化问题”。
 
 **建议去向：**
-test/script/CI、AGENTS.md、Skill、docs，或“不变更”。
+候选改进适合放在 test/script/CI、AGENTS.md、Skill 或 docs；如果证据不足，建议“不变更”。
 
 **下一步：**
-说明是否确实提出一个小型、可持久化的改进。
+如果确实存在可重复的摩擦，Codex 会提出一个范围很小、能够长期保留的改进；否则 Codex 会结束复盘。
 
 **需要你确认：**
-如果提出文件变更，是否允许写入。
+如果候选改进需要改文件，请确认是否允许 Codex 写入；在你确认前，复盘只读。
 
 **怎么回复：**
 `确认写入`
 
-> 实施候选改进
+> 你同意实施已经说明的候选改进。Codex 接下来只修改对应范围，并运行相关验证。
 
 `只记录`
 
-> 记录但不改文件
+> 你只想保留复盘记录。Codex 会记录候选改进，但不会修改文件。
 
 `取消`
 
-> 结束复盘
+> 你要结束复盘。Codex 不会写入候选改进，也不会继续其他操作。
 ```
 
 如果没有候选改进，直接报告 `未发现可持久化问题` 并结束；不要为了产生改动而追问或补造问题。
+
+复盘正文先说结论，再分别说明观察、证据、建议去向和写入边界。每段都写清主语：用户决定是否写入，Codex 负责提出或实施候选改进，测试或脚本负责验证。保留 test/script/CI、AGENTS.md、Skill、docs 等关键术语；不把“实施候选改进”“结束复盘”单独当作完整说明。
 
 Look for concrete friction such as repeatedly guessing test commands, unclear startup instructions, unstable environment-variable entry points, local/CI command drift, recurring special build flags, stale `AGENTS.md` rules, or a repeated manual reminder that could become a test or script.
 

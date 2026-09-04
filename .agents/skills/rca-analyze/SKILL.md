@@ -112,6 +112,8 @@ Large RCA only: ...
 
 For Large RCA, add `代表性问题`, `共性不变量`, and `触类旁通清单`. If the root cause is not confirmed, write `根因：尚未确认` and report the next evidence needed instead of presenting a likely cause as fact.
 
+RCA 的正文要让用户看懂“哪里坏了、为什么坏、影响谁、下一步做什么”：先写结论，再按证据、调用链、影响和边界分段；并列证据用 bullet；每个动作写清主语（用户、Codex、代码或测试）。保留 RCA、call path、regression 等关键术语，第一次出现时用短句解释，不把“根因已确认”“进入下一阶段”当作完整说明。
+
 ## Handoff
 
 When the report is complete, use one of these cards and stop:
@@ -120,30 +122,30 @@ When the report is complete, use one of these cards and stop:
 **结论：RCA 已完成；根因、证据和影响范围已记录。**
 
 **已完成：**
-RCA 已完成。
+Codex 已经把现象、复现证据、调用链、根因和影响范围整理清楚。RCA（Root Cause Analysis）在这里表示“先找出问题为什么发生”，不是直接修复。
 
 **下一步：**
-回到 `$task-brief` 定义修复任务，或保留 RCA 结论。
+你可以把结论整理成一项修复任务，也可以只保留这次分析结果。
 
 **需要你确认：**
-是否把这次分析转成授权的修复任务；当前不写文件。
+请决定是否继续定义修复任务。无论选择哪一项，Codex 现在都不会写文件。
 
 **怎么回复：**
 `整理 brief`
 
-> 进入修复任务定义
+> 你要把已经确认的 RCA 结果转成修复任务。Codex 接下来会整理 Brief，再按 Route、Plan 和实施权限继续；现在不会修改文件。
 
 `只保留结论`
 
-> 结束 RCA
+> 你只需要这次 RCA 的结论。Codex 会保留分析结果并结束当前 RCA，不会进入修复或修改文件。
 
 `继续调查`
 
-> 补充 RCA 证据
+> 你认为证据还不够。Codex 会继续做只读调查，补充复现、调用链或影响范围，不会修改文件。
 
 `取消`
 
-> 停止
+> 你要停止当前 RCA。Codex 不会继续调查，也不会修改文件。
 ```
 
 If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write.

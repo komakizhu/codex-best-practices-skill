@@ -57,26 +57,26 @@ Emit one concise route summary and one handoff card before routed work, in the u
 **类型：** 普通工程任务
 
 **已完成：**
-brief 已确认，授权模式与规模已判断。
+Brief 已经确认，Codex 也已经判断了这次任务是否需要写文件以及调查多大的范围。
 
 **下一步：**
-先做必要的只读调查；调查后再检查是否触发 Option。
+先查清问题的调用链和现有证据，再判断是否需要进入 Option 比较方案。
 
 **需要你确认：**
-是否按此路由继续？
+请确认是否按这条 Route 继续；你确认后，Codex 才会开始只读调查。
 
 **怎么回复：**
 `确认路由`
 
-> 开始调查
+> 你同意这条 Route。Codex 接下来会先做只读调查，不会马上修改文件。
 
 `修改：...`
 
-> 重新判断
+> 你要补充或修改这条 Route。Codex 会根据你的补充重新判断，然后再请你确认。
 
 `取消`
 
-> 停止
+> 你要停止当前任务。Codex 不会开始调查或修改文件。
 ```
 
 For an explicit Bug-fix route, put the pre-write condition in the bold summary and show the full route handoff:
@@ -90,26 +90,26 @@ For an explicit Bug-fix route, put the pre-write condition in the bold summary a
 **限制：** 根因确认前不写文件
 
 **已完成：**
-已识别为 Bug 修复请求，已确定需要 Large 级别的完整 RCA。
+已经确认这是 Bug 修复请求，而且问题涉及多个调用方和多种失败情况，所以需要做 Large 级别的完整 RCA。
 
 **下一步：**
-先完成 full RCA；根因确认前不进入 native Plan 或修改文件。
+先把代表性失败、共同调用机制和回归范围查清。根因确认之前，Codex 不会进入 native Plan 或修改文件。
 
 **需要你确认：**
-确认该路由后开始只读调查。
+请先确认这条 Route。你确认后，Codex 才会开始只读的 full RCA，并在根因确认之前保持不写文件。
 
 **怎么回复：**
 `确认路由`
 
-> 开始 full RCA
+> 你同意这条 Route。Codex 接下来会开始只读的 full RCA，不会修改文件。
 
 `修改：...`
 
-> 重新判断路由
+> 你要修改当前 Route 判断。Codex 会按照你的补充重新判断，然后再请你确认。
 
 `取消`
 
-> 停止
+> 你要停止当前 Bug 分析。Codex 不会进入 full RCA 或修改文件。
 ```
 
 Stop after the card. Do not invoke `$option-explorer`, native Plan, Worktree, Goal, Review, or modify files while waiting. Do not narrate a second workflow state machine; this is the one route handoff required at this boundary.
@@ -122,8 +122,6 @@ Stop after the card. Do not invoke `$option-explorer`, native Plan, Worktree, Go
 
 For either Medium or Large, when native Plan is unavailable, use `Native Plan availability and handoff` below. Do not emit a bare `/plan`, and do not treat a prose outline or a user’s “我想好了” as native Plan completion.
 
-When investigation has genuinely independent questions, prefer the host’s native Colleagues/sub-agent parallel workflow if it is available and permitted. Do not create parallel work merely for ceremony, and never claim it ran without an actual successful invocation.
-
 **Large** — Complete full RCA before implementation planning is allowed to turn into a write: representative failures, shared mechanism, generalization boundary, and regression matrix must be explicit. Then use native Plan first. If the current host cannot call native Plan itself, follow `Native Plan availability and handoff` below: output the filled Plan request immediately and stop any implementation, ExecPlan persistence, Worktree, Goal, or Review until the native result is visible; a check-only task may continue only with independent read-only checks that do not need the plan. After a completed native Plan for `implementation`, use an explicit host action such as Implement or returning to execution mode as execution authorization. If no such authorization is observable, display the Plan outcome and stop for `确认计划，执行`; include the proposed ExecPlan path, Worktree/Goal use, milestones, migration, and rollback choices in that card. `修改计划` regenerates it and `取消` stops. Only after execution authorization may the route persist a living ExecPlan using the repository’s convention (default: `docs/exec-plans/YYYY-MM-DD-<task>.md`) and use native Worktree or Goal when the current host actually exposes and permits them. Record goal/non-goals, current state, scope, constraints, risks, milestones and validation, compatibility/migration, rollback, progress, discoveries, decisions, acceptance criteria, and stop conditions; update progress as work changes. A Goal or Worktree must not be inferred or simulated: if the host requires an explicit user/UI action or no callable native entry exists, provide a precise handoff and stop. Never replace a Worktree with a copied directory or ordinary branch, or a Goal with an open-ended instruction. Verify every milestone, run final real checks, and use native Review against the actual base (normally `main`) before acceptance. In `check-only`, do not persist an ExecPlan or alter code; report the read-only findings. In `plan-only`, show the plan and stop without writing an ExecPlan, creating Worktree/Goal, implementing, or reviewing.
 
 ### 真实回复写作规则（适用于所有 Router/Plan 切换输出）
@@ -132,7 +130,9 @@ When investigation has genuinely independent questions, prefer the host’s nati
 - 当同卡片里有两个以上并列要点时，用 `结论` + 明确分点的形式呈现；避免把复杂流程全塞到一行里。
 - 每条动作语句保持一个主语（用户/Workflow/Codex）与一个动作，不叠加多个意图。
 - 内部状态（如“内部已确认、内部未确认”）不写入用户可读路径，除非该状态直接影响授权。
-- 口令行必须单独一段，不能用 `-`、`*`、`1.`，也不能和解释写在同一行。
+- 口令行必须单独一段，不能用 `-`、`*`、`1.`，后面空一行，再用以 `> ` 开头的一段话说明用户选择之后会发生什么。
+- 每个正文段都要有明确主语，优先使用“你”、“Codex”、“代码”或“测试”；不要只写“已完成”、“进入下一阶段”这种没有主语的内部标签。
+- 技术名词保留原文，但第一次出现时用一句短话说明它在这一步是干什么的；不把 Route、RCA、Plan 只当作内部状态名称。
 
 ## Native Plan availability and handoff
 
@@ -168,7 +168,7 @@ If the host’s exact entry syntax is unknown, tell the user to enter Plan mode 
 请只制定 native Plan，不修改文件、不执行实现、不提交。
 
 **下一步：**
-请通过宿主 UI 手动进入 Plan 模式，并将以上请求作为下一条消息提交。真实 Plan 结果出现前不写文件。
+请在宿主 UI 中手动打开 Plan，把上面的 `Plan 请求` 粘贴到当前对话。native Plan 结果出现前，Codex 不会写文件。
 ```
 
 The block above defines the field order only. In a live handoff, replace every angle-bracketed item with the actual brief and RCA facts before showing it to the user. The live handoff must explicitly say to enter Plan through the host UI and paste the filled request into the current conversation. Once the real native result is visible, consume it directly; do not request another message merely to acknowledge completion and do not ask the user to paste or upload the same result again.
@@ -186,18 +186,18 @@ After the confirmed route’s necessary read-only investigation, explicitly eval
 发现两个（或更多）实质不同、成本都高且暂无明显赢家的方案。
 
 **下一步：**
-可进入 `$option-explorer`，预计增加探索时间/Token。
+Codex 可以进入 Option，比较这些方案的实现成本、风险和回滚方式；这会增加探索时间和 Token 消耗。
 
 **请确认：**
-现在是否进入 Option？
+你要不要让 Codex 先做这次额外比较？
 
 `进入 option`
 
-> 开始探索
+> 你同意进入 Option。Codex 接下来会比较候选方案，不会直接修改文件。
 
 `跳过 option`
 
-> 直接进入下一阶段
+> 你不需要额外比较。Codex 接下来会直接进入下一阶段，不会因为跳过 Option 而修改文件。
 ```
 
 `进入 option` is the only permission to invoke the optional Skill. `跳过 option` means continue directly to the required native Plan or confirmed Small route. If the conditions are not met, state `Option 不触发` and flow directly into the already-required next stage: invoke callable native Plan, output the filled manual Plan request, or continue the confirmed Small route. Do not insert another text confirmation for a branch that did not trigger.
@@ -211,7 +211,7 @@ When Option does not trigger, make the next handoff explicit instead of silently
 当前证据不足以证明存在高成本且无明显赢家的分叉。
 
 **下一步：**
-进入 <下一阶段>。
+Codex 接下来会进入 <下一阶段>。如果这个阶段需要你手动操作或确认，Codex 会在这里把具体动作写清楚。
 
 Option 未触发时，在同一条回复中继续输出下一阶段的真实内容；如果下一阶段是手动 Plan，紧接着输出填满的 `Plan 请求`。
 ```
@@ -226,30 +226,30 @@ When a required native Plan completes and its result is observable, show the res
 **结论：native Plan 结果已可见，等待你确认后进入 implementation。**
 
 **已完成：**
-native Plan 结果已可见，关键范围、风险和验证已列出。
+Plan 已经列出要改的范围、主要风险和验证方法。native Plan 是宿主提供的实施计划，不是普通文字大纲。
 
 **下一步：**
-进入已授权的 implementation stage。
+如果你确认执行，Codex 会进入 implementation，按这份 Plan 修改文件并运行验证。
 
 **需要你确认：**
-接受该 Plan，并确认 ExecPlan、Worktree、Goal、迁移/回滚等已列出的选择。
+请确认是否接受这份 Plan。当前卡片中的 ExecPlan、Worktree、Goal、迁移和回滚安排，也会按 Plan 中列出的内容执行。
 
 **怎么回复：**
 `确认计划，执行`
 
-> 继续
+> 你接受这份 Plan，并授权 Codex 开始 implementation。Codex 接下来会修改文件并运行验证。
 
 `执行`
 
-> 简写为确认计划并继续
+> 你用简写确认执行。Codex 会把它当作“确认计划，执行”，然后开始 implementation。
 
 `修改计划`
 
-> 重做交接
+> 你不同意当前 Plan。Codex 会先停在这里，按照你的要求重新整理计划，不会修改文件。
 
 `取消`
 
-> 停止
+> 你要停止当前任务。Codex 不会执行这份 Plan，也不会修改文件。
 ```
 
 For `check-only` or `plan-only`, show the Plan/findings and stop without asking for execution. A user-run fallback is complete only when the actual native result is visible, not when the user sends a separate acknowledgement.

@@ -31,26 +31,26 @@ For Mixed, use this compact choice card and stop:
 **结论：当前需求既包含探索意图，也包含实施请求。**
 
 **当前判断：**
-想法仍在探索，但你也提到了实施请求。
+你还在想清楚方向，但同时也提到了要实施。
 
 **下一步：**
-可以先探索，也可以整理成 action-ready brief。
+你可以先把想法说清楚，也可以直接把需求整理成 action-ready Brief。
 
 **需要你确认：**
-选择是否先讨论；未选择前不进入 Router、Plan 或执行。
+请先决定是先讨论，还是直接定义任务；在你选择之前，Codex 不会进入 Route、Plan 或执行。
 
 **怎么回复：**
 `进入探索`
 
-> 先讨论
+> 你想先讨论这个想法。Codex 接下来会帮你把目标和可能方向说清楚，不会修改文件。
 
 `整理 brief`
 
-> 直接定义任务
+> 你已经准备好进入任务定义。Codex 接下来会整理一份 Brief，并在你确认后再进入 Route。
 
 `取消`
 
-> 停止
+> 你要停止当前任务。Codex 不会继续处理。
 ```
 
 If the user explicitly says `先聊一聊`, `还没想好`, `先别整理`, or equivalent at any point before the brief is confirmed, switch to Exploration immediately. Freeze any displayed brief as `暂存草案（未确认）`; do not regenerate it from each new message and do not treat later idea fragments as brief corrections.
@@ -61,30 +61,30 @@ For Exploration, show this short handoff and stop:
 **结论：当前先停留在探索阶段，不生成或更新 brief。**
 
 **已完成：**
-已识别为探索性想法。
+已识别出来，你现在是在探索方向，还没有确定要改哪些文件。
 
 **下一步：**
-可以普通讨论，或进入「结构化探索」梳理目标、场景、约束和候选方向。
+你可以继续普通讨论，也可以选择「结构化探索」，让 Codex 按目标、场景、约束和候选方向逐步梳理。
 
 **需要你确认：**
-选择探索方式；确认前不进入 Router、Plan 或执行。
+请选择探索方式；在你确认之前，Codex 不会进入 Route、Plan 或执行。
 
 **怎么回复：**
 `进入结构化探索`
 
-> 开始结构化探索
+> 你选择结构化探索。Codex 接下来会按目标、场景和约束逐步梳理，不会进入 Route 或修改文件。
 
 `继续讨论`
 
-> 直接讨论
+> 你想继续用普通对话补充想法。Codex 会继续讨论，不会更新 Brief、Route 或修改文件。
 
 `整理 brief`
 
-> 回到任务定义
+> 你要把已经讨论的内容整理成任务摘要。Codex 会根据当前讨论生成新的 Brief，然后请你确认。
 
 `取消`
 
-> 结束
+> 你要结束当前探索。Codex 不会进入 Route、Plan 或实施。
 ```
 
 For a symptom-only Bug report / RCA-ready message, show this notice and then invoke `$rca-analyze` in the same response; this is a safe, read-only diagnostic stage and does not require a second confirmation:
@@ -104,11 +104,11 @@ Bug 审查 / RCA
 **切换：**
 `整理 brief`
 
-> 进入修复任务定义
+> 你要把已确认的 RCA 结果转成一项修复任务。Codex 会整理 Brief，但仍会保留后续 Route、Plan 和实施确认。
 
 `只保留结论`
 
-> 结束 RCA
+> 你只需要这次 RCA 的结论。Codex 会结束分析，不会修改文件。
 ```
 
 For an explicit `check-only` request, show the normal five-item `$task-brief` instead; its no-write authorization is preserved through `$task-router`. After `$rca-analyze` returns, reassess the user’s intent. Its result does not automatically enter `$task-brief`, `$task-router`, Plan, or implementation.
@@ -151,19 +151,19 @@ For an automatic local discussion Skill, show this notice before invoking it in 
 <公开的讨论方式>
 
 **原因：**
-你的当前意图与它的触发条件匹配。
+你现在是想先讨论或澄清问题，还没有要求 Codex 修改代码或进入执行。
 
 **边界：**
-先做讨论/澄清，不更新 brief、不进入 Router/Plan/执行；后续若要写文档或调用下一 Skill，会另行说明并确认。
+这一阶段只讨论和澄清，不更新 Brief、不进入 Route 或 Plan、不修改文件。如果后面需要写文档或调用其他 Skill，Codex 会单独说明并请你确认。
 
 **切换：**
 `继续普通讨论`
 
-> 返回普通讨论
+> 你想离开当前的讨论方式，回到普通对话。Codex 会继续和你讨论，不会自动进入其他流程。
 
 `停止当前 Skill`
 
-> 停止当前讨论模式
+> 你要停止当前的讨论方式。Codex 会结束这次讨论，不会继续调用它。
 ```
 
 For an internal helper, `<公开的讨论方式>` must be a capability label such as `结构化探索` or `逐项澄清`, not the helper’s Skill name. The names of the six public Skills above may be shown when one of them is the actual next stage.
@@ -174,30 +174,30 @@ For a user-only Skill, use this handoff instead of trying to invoke it:
 **结论：当前需要你的明确入口，确认前不进入 Router、Plan 或执行。**
 
 **已完成：**
-已匹配一个需要用户显式启动的本地辅助模式。
+已匹配到一个需要你亲自启动的本地辅助模式。
 
 **下一步：**
-等待你的明确入口，或改用 <可模型调用替代>。
+等你说明要启动它，或者选择一个 Codex 可以自动调用的替代能力。
 
 **需要你确认：**
-是否进入这条高强度/特定流程。
+请决定是否启动这条高强度或特定流程。
 
 **怎么回复：**
 `开始该模式`
 
-> 进入该模式
+> 你要启动这条流程。Codex 会按照该模式的规则继续，但仍会保留必要的确认和不写边界。
 
 `用<可模型调用替代>`
 
-> 改用替代能力
+> 你不启动这条用户专用流程，而是选择替代能力。Codex 会改用该能力继续。
 
 `继续普通讨论`
 
-> 返回普通讨论
+> 你想回到普通对话。Codex 会停在当前流程之外，不会启动该辅助模式。
 
 `取消`
 
-> 退出
+> 你要退出当前流程。Codex 不会启动该模式或修改文件。
 ```
 
 Only when the user has already explicitly named a user-only Skill and needs an exact invocation string may the Workflow repeat that name; this exception is an entry instruction, not a normal progress label.
@@ -228,18 +228,29 @@ Every permission-requiring transition from one Skill or native stage to another 
 **怎么回复：**
 `确认`
 
-> 继续当前阶段
+> 你同意当前这一步。Codex 会继续处理这个阶段，但不会因此获得后续阶段的额外权限。
 
 `修改：...`
 
-> 修改当前判断
+> 你要补充或修改当前判断。Codex 会按照你的说明重新整理这张交接卡，然后再请你确认。
 
 `取消`
 
-> 停止
+> 你要停止当前流程。Codex 不会进入下一阶段，也不会修改文件。
 ```
 
 Keep the card short enough to scan. Do not hide required evidence or constraints; move them into normal-text detail below the summary. Stop after a permission card. Do not silently invoke the named next stage. `确认` confirms only the current card; it is not blanket permission for later Option exploration, Plan approval, file writes, Worktree, Goal, Review, or retrospective. When the current card explicitly asks for plan execution, `执行` is accepted as a shorthand for `确认计划，执行`; an explicit host Implement action or return to execution mode is also execution authorization when the native Plan is visible. When the current card explicitly asks about closeout, `复盘` and `跳过` are accepted as shorthands for the named retrospective choices. `修改：...` revises the current handoff, and `取消` ends the active Workflow without starting the next stage.
+
+### 真实回复正文
+
+正文和交接卡使用同一套表达方式，不只调整可复制口令的格式：
+
+- 第一段先说结论，随后分别说明已知事实、它意味着什么、下一步和边界。
+- 每段只承担一个主要意思；出现两个以上并列原因、风险、文件或步骤时，用 bullet 拆开。
+- 每个动作都写明主语。用“你”“Codex”“代码”“测试”或“宿主”说明谁做什么，不只写“已完成”“继续判断”。
+- 保留 Brief、Route、RCA、Plan、Option、native Plan、implementation、Worktree、Goal、Review 等关键术语；第一次出现时用短句解释它在当前步骤中的用途。
+- 把内部状态改写成用户能理解的决定和后果；不展示不会影响用户选择的内部流程细节。
+- 需要复制的内容单独成段；口令后空一行，再用 `> ` 开头的段落解释选择结果。
 
 For the native Plan boundary, follow `$task-router`’s handoff. Never emit a bare or guessed `/plan` instruction. When the task requires native Plan and the host has no callable entry, immediately output a filled `Plan 请求` with the fixed field order `任务目标`、`已确认的 RCA/证据`、`范围`、`非目标`、`约束`、`验收与验证`, followed by `请只制定 native Plan，不修改文件、不执行实现、不提交。`, and tell the user to enter Plan through the host UI and paste it into the current conversation. Do not require prior confirmation that manual Plan exists and do not require a separate text acknowledgement after planning. Distinguish three observable states: the request has been shown, a real native Plan result is visible, and execution has been authorized either by the host’s Implement/return-to-execution action or, when no such action is observable, by `确认计划，执行`. A visible result needs no re-paste or upload. `update_plan` remains a checklist/progress tool, not native Plan.
 
@@ -277,13 +288,13 @@ For the Medium/Large closeout, use this compact card:
 **怎么回复：**
 `进入复盘`
 
-> 开始复盘
+> 你要检查这次任务是否暴露了可重复的仓库问题。Codex 接下来会进入复盘，但不会默认修改文件。
 
 `跳过复盘`
 
-> 直接结束
+> 你不需要进行复盘。Codex 会保留完成报告并结束当前任务。
 
 `取消`
 
-> 停止当前 Workflow
+> 你要停止当前 Workflow。Codex 不会进入复盘或继续其他操作。
 ```
