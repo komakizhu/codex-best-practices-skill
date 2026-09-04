@@ -23,7 +23,11 @@ Use these as manual pressure cases for the routing rules. The expected result is
 | “$task-router 为 Workflow 规则修复制定计划，只做计划；当前只有 `update_plan`。” | Do not treat `update_plan` as native Plan. Immediately show the filled user-run Plan request, tell the user to enter Plan through the host UI, and stop after the real Plan result because the route is `plan-only`. |
 | “$task-router 评估多窗口架构迁移，只做计划，不修改文件。” | Show Large / `plan-only` route and wait for `确认路由`; no file writes, ExecPlan persistence, Worktree, Goal, implementation, or automatic retrospective. |
 | “$engineering-workflow 把刚才讨论的设置改动落到仓库，并运行相关测试。” | Always display and confirm the five-item Task Brief, show and confirm the route, explicitly announce whether Option triggers, and use the required native stages only after their handoff confirmations. |
-| “$task-brief 把刚才讨论的架构想法整理成任务定义，不要实施。” | Return a Task Brief only; preserve plan-only/no-write boundary and do not route into implementation. |
+| “$task-brief 把刚才讨论的架构想法整理成任务定义，不要实施。” | Display the five-item Brief; after `确认`, continue to the Route stage while preserving the no-write boundary until the required Plan and execution authorization. If the user explicitly says “只整理 brief”，stop after the Brief. |
+| “$rca-analyze 这个 Skill 为什么调不起来？先分析，不要修。” | Enter the Workflow at RCA, keep the review read-only, and after the RCA report offer `整理 brief` as the repair handoff or `只保留结论` as the terminal branch. |
+| “$task-router 评估这个 Workflow 规则问题并修复。” | Enter the Workflow at Route, show and confirm the Route handoff, then continue through investigation, Option evaluation, native Plan, implementation, verification, and completion without asking the user to rediscover the next stage. |
+| “$option-explorer 比较这两条已经确认的技术路线。” | Enter the Workflow at Option, check the three trigger conditions, and after a selected direction flow directly into native Plan or the filled manual Plan request. |
+| “$repo-retrospective 检查刚才的任务有没有可重复的仓库摩擦。” | Run the optional terminal retrospective and show its write/record/cancel choices; do not start another engineering stage automatically. |
 | “完成这个工程任务后，检查是否有可重复的仓库环境摩擦。” | Use `$repo-retrospective`; default to no changes and persist only evidence-backed recurring improvements. |
 
 ## Native Plan end-to-end acceptance transcripts
@@ -149,6 +153,40 @@ The selected direction flows directly into callable Plan or the filled manual Pl
 
 No completion receipt or duplicate execution confirmation is requested. Implementation begins only because both the real Plan result and the host’s execution authorization are observable.
 
+## Public Skill stage-continuation acceptance transcripts
+
+These cases verify that a direct public Skill invocation starts the full Workflow at that stage. The continuation is visible, but each later permission gate remains in force.
+
+### Scenario 4 — Direct RCA entry returns to Brief
+
+**Setup:** The user invokes `$rca-analyze` for a symptom-only Bug and does not authorize a fix.
+
+**Expected:** Codex performs read-only RCA, reports the confirmed or unconfirmed root cause, and shows `整理 brief`, `只保留结论`, `继续调查`, `继续聊聊`, and `取消`. Choosing `整理 brief` produces the five-item Brief; choosing `只保留结论` ends the read-only path. No file is modified.
+
+### Scenario 5 — Direct Router entry continues after Route
+
+**Setup:** The user invokes `$task-router` with an implementation request.
+
+**Expected:** Codex shows and confirms the Route card without inventing an earlier Brief gate. After `确认路由`, Codex performs the required investigation, reports the Option decision, and continues to native Plan or the filled manual Plan request. The Route result never ends with findings alone.
+
+### Scenario 6 — Direct Option entry returns to Plan
+
+**Setup:** The user invokes `$option-explorer` and the three Option trigger conditions hold.
+
+**Expected:** Codex compares the candidate paths, waits for `选择 A` / `选择 B` / `回到 Plan` / `继续聊聊` / `取消`, and sends a selected direction directly to native Plan or the filled manual Plan request. No second Plan-entry confirmation appears.
+
+### Scenario 7 — Direct Brief entry returns to Route
+
+**Setup:** The user invokes `$task-brief` for an action-ready repository task.
+
+**Expected:** Codex displays the five-item Brief. After `确认`, Codex shows the Route handoff; `先聊一聊` keeps the Brief as a draft and `取消` stops. A standalone Brief is terminal only when the user explicitly asks to keep the Brief without routing.
+
+### Scenario 8 — Check-only result has a visible next choice
+
+**Setup:** A confirmed Route runs a `check-only` investigation and reaches a stable result.
+
+**Expected:** Codex reports the result and then shows the next read-only action or `整理 brief` / `只保留结论` terminal choice. The response does not ask for implementation authorization and does not stop after a findings-only paragraph.
+
 ## 场景化中文验收稿（10 套真实输出样例）
 
 以下示例均采用同一风格：复杂信息用一个自然段；并列信息使用结论+要点；每个口令单独成段，与说明之间空一行，说明段以 `> ` 开头；无列表标记。
@@ -235,6 +273,10 @@ No completion receipt or duplicate execution confirmation is requested. Implemen
 
 > 你要补充或修改这条 Route。Codex 会根据你的补充重新判断，然后再请你确认。
 
+`继续聊聊`
+
+> 你暂时不确认这条 Route，想继续讨论。Codex 会保留当前内容，回到讨论，不会开始调查、Plan 或修改文件。
+
 `取消`
 
 > 你要停止当前任务。Codex 不会开始调查或修改文件。
@@ -320,6 +362,10 @@ No completion receipt or duplicate execution confirmation is requested. Implemen
 
 > 你不需要额外比较。Codex 接下来会直接进入 Plan，不会因为跳过 Option 而修改文件。
 
+`继续聊聊`
+
+> 你暂时不进入 Option，想继续讨论。Codex 会保留当前判断，回到讨论，不会开始方案比较或修改文件。
+
 ### 场景八：需要手动打开 Plan
 
 **改前（问题）**
@@ -374,6 +420,10 @@ Plan 需要说明：
 
 > 你不同意当前 Plan。Codex 会先停在这里，按照你的要求重新整理计划，不会修改文件。
 
+`继续聊聊`
+
+> 你暂时不执行这份 Plan，想继续讨论。Codex 会保留 Plan 结果，回到讨论，不会修改文件。
+
 `取消`
 
 > 你要停止当前任务。Codex 不会执行这份 Plan，也不会修改文件。
@@ -408,9 +458,121 @@ Plan 需要说明：
 
 > 你不需要复盘。Codex 会保留完成报告并结束当前任务。
 
+`继续聊聊`
+
+> 你想继续讨论完成结果。Codex 会保留完成报告，不会进入复盘或执行其他操作。
+
 `取消`
 
 > 你要停止当前 Workflow。Codex 不会进入复盘或继续其他操作。
+
+## 中文可读性回归验收（10 套具体场景）
+
+这些场景专门检查“技术内容准确，但中文不拗口”。机器校验只检查结构；验收人要朗读“改后”内容，确认半技术用户不需要猜主语、动作或因果。润色只改表达，不改事实、权限、数值或结论。
+
+### 场景 1：RCA 解释文本替换机制
+
+**触发条件：** RCA 已确认 `PastedTextDelta` 只计算公共前缀，长文本修订会整段删除后重发。
+
+**改前：** “问题集中在键盘事务替换路径，PastedTextDelta 导致长文本修订时整体退格并重发。”
+
+**改后：** “RCA 找到的问题在键盘输入的文本替换逻辑里。`PastedTextDelta` 只比较新旧文本开头相同的部分，所以长文本修改时，代码会先删掉整段内容，再重新输入新内容。”
+
+**验收标准：** 保留标识符和因果关系；不出现“事务替换路径”这类未解释的复合词；读者能说出是谁做了什么。
+
+### 场景 2：Route 说明下一步
+
+**触发条件：** 用户已经确认 Brief，Route 判断需要先做只读调查。
+
+**改前：** “确认后进入下一阶段，继续判断流程。”
+
+**改后：** “你确认这条 Route 后，Codex 会先读取调用链和测试结果，判断问题是否需要进入 Option；在判断完成前，Codex 不会修改文件。”
+
+**验收标准：** 明确写出用户、Codex 各自的动作，以及调查期间不会写文件。
+
+### 场景 3：Brief 解释技术约束
+
+**触发条件：** 任务要求保留现有 API，只修复并发下的文本丢失。
+
+**改前：** “Task scope 聚焦于 concurrency compatibility，避免影响既有行为。”
+
+**改后：** “这次只处理并发情况下的文本丢失。现有 API 保持不变，其他输入行为也不调整。”
+
+**验收标准：** 普通正文使用“任务”而不是孤立的 `Task`；技术约束和非目标都能直接读懂。
+
+### 场景 4：RCA 的 `整理 brief` 口令
+
+**触发条件：** RCA 已确认根因，用户需要把结果转成修复任务。
+
+**改前：** “下一步请回复 `整理 brief`，我会继续处理。”
+
+**改后：**
+
+`整理 brief`
+
+> 你要把已确认的 RCA 结果整理成修复任务。Codex 接下来会生成 Brief，再按 Route 和 Plan 继续；现在不会修改文件。
+
+**验收标准：** 口令独占一段，说明单独成段并以 `> ` 开头；复制时只得到 `整理 brief`。
+
+### 场景 5：check-only 调查结束
+
+**触发条件：** 只读调查已完成，但用户没有要求修复。
+
+**改前：** “调查完成，报告结果后停止。”
+
+**改后：** “Codex 已经完成只读调查。你可以把结果整理成修复 Brief，也可以只保留这次结论；在你选择之前，Codex 不会修改文件。”
+
+**验收标准：** 不使用“报告后停止”这种内部状态句；用户能看出下一步选项和权限边界。
+
+### 场景 6：Option 比较两条路线
+
+**触发条件：** 两种实现方式成本接近，且都可能影响数据回滚。
+
+**改前：** “Option A/B 存在架构差异，需进行方案决策。”
+
+**改后：** “方案 A 迁移更平滑，但过渡期要同时维护两套读写逻辑。方案 B 实现更简单，但迁移时应用需要暂停。你选定方向后，Codex 会把它交给 native Plan。”
+
+**验收标准：** 说明每个方案具体差在哪里、代价是什么，以及选择后由谁做什么。
+
+### 场景 7：手动 native Plan 提示
+
+**触发条件：** 当前宿主没有可调用的 native Plan。
+
+**改前：** “需要替换 Plan 路径，请进入下一流程。”
+
+**改后：** “当前宿主没有可调用的 native Plan。Codex 已经准备好 Plan 请求；你打开 Plan 模式并粘贴下面的内容，Plan 结果出现前不会写文件。”
+
+**验收标准：** 使用“手动打开 Plan 并粘贴请求”这种具体动作，不出现“替换路径”“切换流程”等没有对象的说法。
+
+### 场景 8：直接调用 `$rca-analyze`
+
+**触发条件：** 用户直接调用 RCA Skill，只要求查清原因。
+
+**改前：** “RCA 输出完成，Task 将进入后续链路。”
+
+**改后：** “RCA 已经查清现象、证据和调用顺序。你回复 `整理 brief` 后，Codex 会把这些内容整理成 Brief；如果你只想看结论，可以回复 `只保留结论`。”
+
+**验收标准：** 保留 `RCA` 这个阶段名称，但用“任务”说明普通语义；下一步和终点都能直接执行。
+
+### 场景 9：复盘结果
+
+**触发条件：** 完成报告发现测试命令在本地和 CI 中不一致。
+
+**改前：** “发现环境治理路径存在偏差，建议推进闭环。”
+
+**改后：** “本地和 CI 使用了不同的测试命令，导致同一改动得到不同结果。Codex 建议把共同命令写进脚本；你确认后才会修改文件。”
+
+**验收标准：** 把抽象名词换成具体对象、证据和动作；用户知道改哪个地方、为什么改。
+
+### 场景 10：完成报告
+
+**触发条件：** 实现和回归测试都已完成，准备交付结果。
+
+**改前：** “实现、验证和 Review 已完成，工作流进入闭环。”
+
+**改后：** “修复已经完成。测试确认停止录音后文字不会再被延迟退格删掉，Review 也没有发现新的阻塞问题。当前工作区只包含本次修改，Codex 没有提交或发布。”
+
+**验收标准：** 先说用户最关心的结果，再说明测试、Review、工作区和提交状态；不使用“进入闭环”这类空话。
 
 ## Should enter RCA
 
@@ -479,9 +641,9 @@ These assertions apply to route, brief, RCA, Option, Plan, and completion/retros
 - A high-intensity local Skill, including the enabled `grill-me` wrapper when available, may be auto-invoked only when the user explicitly asks for that questioning mode; otherwise show a handoff and wait. Its one-question-at-a-time and approval gates remain in force.
 - A Skill with `disable-model-invocation: true`, such as `带文档拷问`, is user-only and cannot be auto-invoked by `$engineering-workflow`; offer the exact user invocation or a model-invocable alternative.
 - A user-only Skill handoff stays generic in normal output, gives a clear user entry and model-invocable fallback, and offers the exits (`继续普通讨论` / `取消`); it does not silently substitute or auto-run the disabled wrapper.
-- Normal user-facing callouts use a public allowlist: `$engineering-workflow`, `$task-brief`, `$task-router`, `$option-explorer`, and `$repo-retrospective`. Other local Skills are described as capabilities such as `结构化探索` or `逐项澄清`; no unsupported `hidden` metadata field is invented, and host-rendered Skill chips are not misrepresented as hidden.
-- Normal user-facing callouts also allow `$rca-analyze`; it is the read-only Bug-review stage. Its result does not silently enter `$task-brief`, `$task-router`, Plan, or implementation.
-- Never auto-chain multiple local Skills. After one returns, re-evaluate the user’s intent; only `整理 brief` or a concrete action-ready request resumes Task Brief.
+- Normal user-facing callouts use a public allowlist: `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`. Other local Skills are described as capabilities such as `结构化探索` or `逐项澄清`; no unsupported `hidden` metadata field is invented, and host-rendered Skill chips are not misrepresented as hidden.
+- `$rca-analyze` is the read-only Bug-review stage. Its result must show the next handoff (`整理 brief`, `只保留结论`, or another read-only action) and must not silently enter implementation.
+- Do not silently chain internal discussion helpers. Public orchestration Skills are connected Workflow stages: after one returns, apply its stage handoff and continue when the user selects the provided command.
 - A direct/urgent phrase in the initial Workflow message cannot serve as pre-confirmation. After the Brief is displayed, “确认”“按这个做” or “直接修” may confirm it, while preserving all route stages.
 - The brief’s fifth item ends with a concrete reply contract: `确认` continues to Router, `修改：...` regenerates the full brief, `先聊一聊` freezes the snapshot and enters Exploration, and `取消` stops.
 - A correction regenerates the complete five-item Brief and waits again; an explicit cancellation ends the active Workflow without routing or writing.
@@ -493,9 +655,9 @@ These assertions apply to route, brief, RCA, Option, Plan, and completion/retros
 - A Small Bug implementation still requires focused RCA before the first write. A systemic/Large Bug requires representative failures, the shared mechanism, a generalization boundary, and adjacent regression checks before native Plan or implementation.
 - A native-looking outline, a custom diff review, an ordinary branch, or an open-ended “keep going” prompt is not respectively native Plan, native Review, Worktree, or Goal.
 - Review is additional evidence; it never substitutes for real tests.
-- `$engineering-workflow` is the total entry point; `$task-router` remains its lower-level router, while `$task-brief` may be used independently for task definition.
-- An explicit `$task-router` invocation remains an independent lower-level route and does not inherit the Workflow’s Brief confirmation gate.
-- An explicit `$task-router` invocation still receives the route handoff; it only skips the Workflow’s Brief confirmation gate.
+- `$engineering-workflow` is the top-level entry point, and the other five public Skills are valid stage entries into the same Workflow.
+- An explicit `$task-router` invocation enters at Route, skips only the earlier Brief gate, and still receives the route handoff plus all later investigation, Option, Plan, implementation, verification, and completion boundaries.
+- An explicit `$task-brief`, `$rca-analyze`, or `$option-explorer` invocation likewise enters at that stage and must return the next-stage handoff; only an explicit terminal mode stops at the current stage.
 - `$option-explorer` is opt-in and only applies when multiple materially different paths have no clear winner and a wrong choice is costly; internal entry requires `进入 option` and result selection.
 - Medium/Large completion always shows a final result handoff and asks `进入复盘` or `跳过复盘`; `$repo-retrospective` is never started automatically. Its own candidate changes require `确认写入`.
 - The completion card is a task-result summary, not the retrospective itself; choosing `跳过复盘` still returns the final summary and stops.

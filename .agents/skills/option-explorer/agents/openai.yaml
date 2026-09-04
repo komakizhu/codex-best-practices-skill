@@ -1,6 +1,6 @@
 interface:
   display_name: "Option Explorer"
   short_description: "Compare high-cost engineering paths when no clear winner exists"
-  default_prompt: "Use $option-explorer only after showing the trigger and receiving 进入 option; after exploration, wait for a方案选择 before Plan or implementation."
+  default_prompt: "Use $option-explorer after the trigger is shown and 进入 option is selected, or enter the Workflow at Option when invoked directly; after exploration, send the selected direction to Plan without a duplicate entry gate. Keep Option and Plan as fixed terms, explain trade-offs in concrete Chinese, and avoid mechanically translated noun chains."
 policy:
   allow_implicit_invocation: false

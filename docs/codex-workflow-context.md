@@ -10,6 +10,12 @@ Use custom Skills only for orchestration gaps: turning natural-language intent i
 
 Keep the system lightweight. Avoid duplicated rules, unnecessary gates, large persistent context, or a custom framework that competes with native Codex features.
 
+### Stage continuation contract
+
+The public orchestration Skills are connected stages, not isolated answer generators. A direct invocation enters the Workflow at that stage and must return a visible handoff to the next stage or an explicit terminal boundary. Every stage result names the conclusion, what Codex completed, who acts next, the exact command or host action, and what remains forbidden. This contract connects the Workflow without granting later permissions early.
+
+The default transitions are `$task-brief` → `$task-router` → investigation/RCA → Option decision → native Plan → implementation → verification → completion → optional retrospective. `$rca-analyze` joins at RCA, `$option-explorer` joins at Option, and `$repo-retrospective` is the optional terminal stage. Explicit `只分析`、`只保留结论`、`只做计划` and `取消` remain terminal boundaries for their current mode.
+
 ### Runtime source of truth
 
 On the current local host, Codex loads installed Skills from `~/.codex/skills`; the repository’s `.agents/skills` tree is the versioned maintenance copy and is not automatically loaded by the CLI. A Skill change must therefore be synchronized to both locations, then used in a new or reloaded session. Do not add an unsupported `hidden` or `visibility` key while doing so: the available metadata controls UI labels and invocation policy, not per-Skill host-chip visibility.
@@ -19,6 +25,16 @@ On the current local host, Codex loads installed Skills from `~/.codex/skills`; 
 Every handoff starts with one bold, single-sentence conclusion. After that, use the four semantic fields `已完成`、`下一步`、`需要你确认`、`怎么回复`; each field name occupies its own bold line, and its details use normal text. Reply commands are single-line code spans, each on its own line without list markers, followed by one blank line and an explanation paragraph beginning with `> `. Route, mode, type, and restrictions are separate metadata lines.
 
 正文也要遵守同一套可读性规则：先说结论，再说明事实、影响、下一步和边界；每段只讲一个主要意思，多个并列事实用 bullet；每个动作写明主语（你、Codex、代码、测试或宿主）。Brief、Route、RCA、Plan、Option、implementation 等关键术语保留，第一次出现时用短句说明用途；不会影响用户选择的内部状态不写进正文。
+
+### 轻量中文润色（humanizer-zh）
+
+每次生成用户可见正文时，先保留技术事实，再做一轮轻量改写。只改表达，不改事实、权限、数值或结论：
+
+- `Brief`、`Route`、`RCA`、`Plan`、`Option`、`native Plan`、`implementation`、`Review`、`Worktree`、`Goal` 是固定术语；普通的 `task`、`path`、`flow`、`handoff` 分别写成“任务”“处理逻辑/代码位置”“执行顺序”“下一步交接”。
+- 技术标识符后面说明它具体做什么，不把英文标识符和抽象名词硬拼成新的中文词。
+- 两个以上抽象名词连在一起时，改写成“谁 + 做什么 + 结果”。例如“键盘事务替换路径”改成“键盘输入的文本替换逻辑”。
+- 每句话都写出主语和动作；如果半技术用户需要猜意思，就重写这句话，不要继续堆术语。
+- 输出前朗读一遍，确认开头先回答问题，后面再说明证据、影响、下一步和边界。
 
 `确认`
 
@@ -32,11 +48,15 @@ Every handoff starts with one bold, single-sentence conclusion. After that, use 
 
 > 你要补充或修改当前判断。Codex 会按照你的说明重新整理这张交接卡，再请你确认。
 
+`继续聊聊`
+
+> 你暂时不确认当前这张交接卡，想继续讨论。Codex 会保留当前内容，回到讨论，不会进入下一阶段或修改文件。
+
 `进入结构化探索`
 
 > 你选择结构化探索。Codex 会按目标、场景和约束梳理方向，不会进入 Route、Plan 或修改文件。
 
-`继续讨论`
+`继续聊聊`
 
 > 你想继续补充想法。Codex 会继续讨论，不会更新 Brief、Route 或修改文件。
 
@@ -44,7 +64,7 @@ Every handoff starts with one bold, single-sentence conclusion. After that, use 
 
 > 你要把已经讨论的内容整理成任务摘要。Codex 会生成新的 Brief，然后请你确认。
 
-`继续普通讨论`
+`继续聊聊`
 
 > 你想回到普通对话。Codex 会继续讨论，不会自动进入其他流程。
 
@@ -121,7 +141,7 @@ Current principles:
 - `发布` means publish to GitHub and merge into remote `main`.
 - Do not add hashes, frozen contracts, baselines, gates, or similar machinery without a concrete failure mode that ordinary Git, versioning, constraints, types, transactions, or tests cannot adequately prevent.
 
-The old direct `task-router` entry should eventually be replaced by a higher-level orchestration entry.
+The direct `task-router` entry remains a valid Route-stage entry. The higher-level `$engineering-workflow` entry is recommended when the user wants the full Workflow to classify intent from the beginning.
 
 ## Target Skill Architecture
 
@@ -151,7 +171,7 @@ Main orchestration entry. Dormant during ordinary discussion. Activates only whe
 
 Keep it thin. First separate an exploratory idea, a symptom-only Bug report, and action-ready work, then match a suitable local helper from the current session. A clear request for a safe, model-invocable discussion or read-only RCA stage may be auto-started after a visible generic notice; a user-only, high-cost, write-capable, or ambiguous helper gets a short handoff instead. Exploratory input must not cause a five-item brief to be rewritten after every sentence. A symptom-only Bug report goes to `$rca-analyze` and does not become a repair brief. When the user says `整理 brief`, or the request is already action-ready, synthesize one brief snapshot, then route it to the right workflow, optionally offer solution exploration when a high-value technical fork exists, and offer—not automatically run—a lightweight repository retrospective at the end.
 
-It must not reimplement native Codex workflows. It must show a handoff and wait after the brief, after routing, after a completed RCA before repair, before a triggered Option, after Option exploration, after native Plan only when the host has not already supplied execution authorization, and before optional retrospective entry. A negative Option check flows directly into the required next stage without another confirmation. Exploration has its own short handoff and does not enter Router, Plan, or execution until the user explicitly chooses `整理 brief` and confirms the resulting brief. A local Skill’s own hard gates remain authoritative, and the Workflow never auto-chains multiple local Skills.
+It must not reimplement native Codex workflows. It must show a handoff and wait after the brief, after routing, after a completed RCA before repair, before a triggered Option, after Option exploration, after native Plan only when the host has not already supplied execution authorization, and before optional retrospective entry. A negative Option check flows directly into the required next stage without another confirmation. Exploration has its own short handoff and does not enter Router, Plan, or execution until the user explicitly chooses `整理 brief` and confirms the resulting brief. Internal discussion helpers are not silently chained; the public orchestration stages are chained through the shared continuation contract.
 
 ### Local Skill matching
 
@@ -163,7 +183,7 @@ Inspect the current session’s available Skills and frontmatter before selectin
 - a symptom-only Bug report → use the available `$rca-analyze` route for read-only root-cause analysis; do not treat it as an implementation request;
 - no clear match or multiple equally good matches → ordinary discussion or a short choice handoff.
 
-The auto-call notice names the public capability, why it matches, its discussion/no-routing boundary, and the escape replies `继续普通讨论` / `停止当前 Skill`. Normal output names only `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`; helper names remain internal unless the user explicitly asks. A local helper or RCA call never grants routing, Plan, execution, or writes by itself; if it later proposes a document or other side effect, use a separate confirmation. After it returns, reassess intent rather than silently chaining another helper or entering `$task-brief`.
+The auto-call notice names the public capability, why it matches, its discussion/no-routing boundary, and the escape replies `继续普通讨论` / `停止当前 Skill`. Normal output names only `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`; helper names remain internal unless the user explicitly asks. An internal helper never grants routing, Plan, execution, or writes by itself; if it later proposes a document or other side effect, use a separate confirmation. A public orchestration Skill grants stage context, not later permissions: after it returns, apply the stage continuation contract and show the next handoff.
 
 A symptom-only Bug report is not action-ready: enter read-only `$rca-analyze`. An explicit request to check, diagnose, investigate, review, or explain a failure without changing files is action-ready `check-only` and enters Task Brief/Router first. Every Bug implementation records a confirmed root cause before writing. Small RCA is proportional and localized; Large RCA must cover representative cases and the shared rule, such as a missing family of language-to-Skill invocation mappings.
 
@@ -188,7 +208,7 @@ Optional:
 
 It should primarily summarize information already present in the conversation. Do not behave like an interview bot. Ask at most one important clarification when missing information would materially change implementation direction. Its fifth item must include the brief confirmation instructions.
 
-The user may explicitly call this after discussing a feature. When `$engineering-workflow` is invoked directly, it still displays the brief and waits for `确认`, `修改：...`, `先聊一聊`, or `取消` before routing.
+The user may explicitly call this after discussing a feature. When `$engineering-workflow` is invoked directly, it still displays the brief and waits for `确认`, `修改：...`, `先聊一聊`, or `取消` before routing. When `$task-brief` is invoked directly for action-ready work, its confirmed `确认` continues to `$task-router`; a standalone result is allowed only when the user explicitly asks to keep the Brief without routing.
 
 If the user says `先聊一聊`, `还没想好`, or adds an exploratory fragment, keep the last brief as `暂存草案（未确认）` and return to the Workflow Exploration mode; do not treat that input as a brief correction. `整理 brief` is the explicit boundary that asks for one new synthesis.
 
@@ -239,7 +259,7 @@ Large changes should normally receive native Review against `main` or the correc
 
 ### `$rca-analyze`
 
-Read-only Bug-review entry for symptom-only reports and an optional full-RCA stage for systemic Bugs. Explicit check/diagnosis requests enter `$task-brief`/`$task-router` as `check-only` and may use this RCA protocol during their read-only investigation. Small RCA confirms the exact failure, evidence, call path, and localized cause. Large RCA identifies representative failures, the shared mechanism, the generalization boundary, and adjacent regression checks. It never silently fixes or enters `$task-brief`; after a confirmed cause, the user chooses `整理 brief`, `只保留结论`, or `继续调查`. A Bug-fix task that was explicitly authorized may use the same RCA protocol as its mandatory pre-write investigation.
+Read-only Bug-review entry for symptom-only reports and an optional full-RCA stage for systemic Bugs. Explicit check/diagnosis requests enter `$task-brief`/`$task-router` as `check-only` and may use this RCA protocol during their read-only investigation. Small RCA confirms the exact failure, evidence, call path, and localized cause. Large RCA identifies representative failures, the shared mechanism, the generalization boundary, and adjacent regression checks. It never silently fixes or enters implementation; after a confirmed cause, the user chooses `整理 brief`, `只保留结论`, or `继续调查`, and the selected choice is shown as the next-stage handoff. A Bug-fix task that was explicitly authorized may use the same RCA protocol as its mandatory pre-write investigation.
 
 ## `$option-explorer`
 

@@ -12,7 +12,7 @@ Use this Skill for a symptom report that is not yet an authorized investigation 
 - A report such as “这里有个 Bug”“这个 Skill 调不起来” is not permission to edit files. Keep the review read-only.
 - A request such as “请检查测试为什么失败”“帮我诊断原因，只报告结果” is explicit `check-only` work. It belongs in `$task-brief`/`$task-router` with no-write authorization; RCA can be the investigation method after that route is confirmed.
 - An explicit request to fix, change, implement, or complete a behavior belongs in `$task-brief` and `$task-router`. If the task is a bug fix, carry the RCA requirement into that route; explicit repair intent does not permit a symptom patch before the cause is established.
-- Do not silently chain `$task-brief`, `$task-router`, another local Skill, or a native Plan. Use the handoff below and wait for the user’s next choice.
+- Do not silently invoke a write-capable stage or skip the user’s handoff choice. When this public Skill is invoked directly, treat RCA as the current Workflow stage and return a clear next-stage handoff instead of ending with an isolated report. `$task-brief`, `$task-router`, another local Skill, and native Plan still require their own gates.
 - Do not call a symptom “the root cause.” A root cause must explain the symptom, its trigger, why the existing boundary failed to catch it, and whether the same mechanism can create neighboring failures.
 
 ## Triage: Small or Large RCA
@@ -114,9 +114,11 @@ For Large RCA, add `代表性问题`, `共性不变量`, and `触类旁通清单
 
 RCA 的正文要让用户看懂“哪里坏了、为什么坏、影响谁、下一步做什么”：先写结论，再按证据、调用链、影响和边界分段；并列证据用 bullet；每个动作写清主语（用户、Codex、代码或测试）。保留 RCA、call path、regression 等关键术语，第一次出现时用短句解释，不把“根因已确认”“进入下一阶段”当作完整说明。
 
+轻量中文润色（humanizer-zh）：保留 `RCA`、`call path`、`regression` 和代码标识符，但把普通英文和抽象组合改成自然中文。不要写“事务替换路径”这类直译；改写成“文本替换逻辑”或“负责替换文本的代码”。标识符后面说明它做什么，句子写出主语和结果；只改表达，不改证据、判断或权限边界。
+
 ## Handoff
 
-When the report is complete, use one of these cards and stop:
+When the report is complete, use one of these cards and stop. The card is the RCA stage’s handoff: it must tell the user whether the root cause is confirmed, what the next stage is, and which command selects it.
 
 ```markdown
 **结论：RCA 已完成；根因、证据和影响范围已记录。**
@@ -143,9 +145,13 @@ Codex 已经把现象、复现证据、调用链、根因和影响范围整理�
 
 > 你认为证据还不够。Codex 会继续做只读调查，补充复现、调用链或影响范围，不会修改文件。
 
+`继续聊聊`
+
+> 你暂时不决定下一步，想继续讨论这次 RCA。Codex 会保留当前分析结果，回到讨论，不会进入修复、Plan 或修改文件。
+
 `取消`
 
 > 你要停止当前 RCA。Codex 不会继续调查，也不会修改文件。
 ```
 
-If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write.
+If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write. If the user invoked this Skill directly, `整理 brief` is the explicit handoff back into the full repair Workflow; `只保留结论` remains the terminal check-only branch.

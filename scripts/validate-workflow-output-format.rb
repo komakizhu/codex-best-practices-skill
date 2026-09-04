@@ -105,11 +105,97 @@ SEMANTIC_REQUIREMENTS = {
   }
 }.freeze
 
+STAGE_CONTINUITY_REQUIREMENTS = {
+  'engineering-workflow' => [
+    'Public Skill stage entry and continuation',
+    'A direct public Skill invocation',
+    'stage continuation handoff',
+    'next available handoff or an explicit terminal choice'
+  ],
+  'task-brief' => [
+    'first stage of the full Workflow',
+    'continues to `$task-router`',
+    'standalone Brief'
+  ],
+  'task-router' => [
+    'Stage completion contract',
+    'direct public `$task-router` entry',
+    'next-stage handoff',
+    'show whether the user wants `整理 brief`'
+  ],
+  'rca-analyze' => [
+    'public Skill is invoked directly',
+    'explicit handoff back into the full repair Workflow'
+  ],
+  'option-explorer' => [
+    'immediately show the required next-stage handoff',
+    'direct Option entry remains connected to the full Workflow'
+  ],
+  'repo-retrospective' => [
+    'optional terminal stage',
+    'terminal or write handoff'
+  ]
+}.freeze
+
+CONTINUATION_COMMAND_REQUIREMENTS = {
+  'engineering-workflow' => '`继续聊聊`',
+  'task-router' => '`继续聊聊`',
+  'rca-analyze' => '`继续聊聊`',
+  'option-explorer' => '`继续聊聊`',
+  'repo-retrospective' => '`继续聊聊`',
+  'task-brief' => '`先聊一聊`'
+}.freeze
+
+STALE_CONTINUITY_RULES = {
+  '.agents/skills/engineering-workflow/SKILL.md' => [
+    'After a local Skill returns, re-evaluate the intent; do not automatically chain another Skill or jump to `$task-brief`',
+    'report the native result and stop without an execution confirmation'
+  ],
+  '.agents/skills/task-router/SKILL.md' => [
+    'reports findings and stops',
+    'independent lower-level entry and does not require the Workflow’s Brief gate',
+    'Never auto-chain multiple local Skills'
+  ],
+  '.agents/skills/rca-analyze/SKILL.md' => [
+    'Do not silently chain `$task-brief`, `$task-router`'
+  ],
+  '.agents/skills/task-router/references/routing-cases.md' => [
+    'Never auto-chain multiple local Skills',
+    'remains an independent lower-level route and does not inherit the Workflow’s Brief confirmation gate'
+  ],
+  'docs/codex-workflow-context.md' => [
+    'Workflow never auto-chains multiple local Skills',
+    'A local helper or RCA call never grants routing, Plan, execution, or writes by itself'
+  ]
+}.freeze
+
 ROUTING_CASE_REQUIREMENTS = [
   '宿主没有 callable native Plan，也没有预先声明手动 Plan 入口',
   'Output the filled Plan request immediately',
   'Consume the visible native result directly',
-  'explicit host Implement/return-to-execution action'
+  'explicit host Implement/return-to-execution action',
+  '## Public Skill stage-continuation acceptance transcripts',
+  '### Scenario 4 — Direct RCA entry returns to Brief',
+  '### Scenario 5 — Direct Router entry continues after Route',
+  '### Scenario 6 — Direct Option entry returns to Plan',
+  '### Scenario 7 — Direct Brief entry returns to Route',
+  '### Scenario 8 — Check-only result has a visible next choice'
+].freeze
+
+HUMAN_LANGUAGE_ACCEPTANCE_REQUIREMENTS = [
+  '## 中文可读性回归验收（10 套具体场景）',
+  '### 场景 1：RCA 解释文本替换机制',
+  '### 场景 2：Route 说明下一步',
+  '### 场景 3：Brief 解释技术约束',
+  '### 场景 4：RCA 的 `整理 brief` 口令',
+  '### 场景 5：check-only 调查结束',
+  '### 场景 6：Option 比较两条路线',
+  '### 场景 7：手动 native Plan 提示',
+  '### 场景 8：直接调用 `$rca-analyze`',
+  '### 场景 9：复盘结果',
+  '### 场景 10：完成报告',
+  '只改表达，不改事实、权限、数值或结论',
+  '复制时只得到 `整理 brief`'
 ].freeze
 
 PLAN_BEHAVIOR_SKILL_TARGETS = [
@@ -388,11 +474,44 @@ SEMANTIC_REQUIREMENTS.each do |skill, requirements|
   end
 end
 
+STAGE_CONTINUITY_REQUIREMENTS.each do |skill, tokens|
+  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  content = File.read(path)
+  missing = tokens.reject { |token| content.include?(token) }
+  next if missing.empty?
+
+  add_error(errors, path, 1, "阶段连续性契约缺少：#{missing.join('、')}")
+end
+
+CONTINUATION_COMMAND_REQUIREMENTS.each do |skill, command|
+  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  content = File.read(path)
+  next if content.include?(command)
+
+  add_error(errors, path, 1, "阶段等待卡缺少固定口令：#{command}")
+end
+
+STALE_CONTINUITY_RULES.each do |relative, tokens|
+  path = File.join(ROOT, relative)
+  content = File.read(path)
+  stale = tokens.select { |token| content.include?(token) }
+  next if stale.empty?
+
+  add_error(errors, path, 1, "仍包含过时的阶段断链规则：#{stale.join('、')}")
+end
+
 routing_cases_path = File.join(ROOT, '.agents', 'skills', 'task-router', 'references', 'routing-cases.md')
 routing_cases = File.read(routing_cases_path)
 missing_routing_cases = ROUTING_CASE_REQUIREMENTS.reject { |token| routing_cases.include?(token) }
 unless missing_routing_cases.empty?
   add_error(errors, routing_cases_path, 1, "手动 Plan 验收案例缺少：#{missing_routing_cases.join('、')}")
+end
+
+missing_human_language_cases = HUMAN_LANGUAGE_ACCEPTANCE_REQUIREMENTS.reject do |token|
+  routing_cases.include?(token)
+end
+unless missing_human_language_cases.empty?
+  add_error(errors, routing_cases_path, 1, "中文可读性验收案例缺少：#{missing_human_language_cases.join('、')}")
 end
 
 PLAN_BEHAVIOR_SKILL_TARGETS.each do |relative|

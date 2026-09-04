@@ -9,9 +9,26 @@ This is a dormant, native-first entry point for repository engineering work. It 
 
 ## Boundary
 
-Activate only when the user explicitly invokes `$engineering-workflow`. A clear request to change, test, investigate, review, or otherwise perform a concrete action in the current repository does not activate this Skill by itself. Do not activate for ordinary conversation, explanations, brainstorming, architecture discussion, hypothetical questions, read-only understanding, or pasted code without execution intent.
+Activate the top-level Workflow when the user explicitly invokes `$engineering-workflow`; a direct invocation of one of the six public orchestration Skills enters the same Workflow contract at that named stage. A clear request to change, test, investigate, review, or otherwise perform a concrete action in the current repository does not activate either entry by itself. Do not activate for ordinary conversation, explanations, brainstorming, architecture discussion, hypothetical questions, read-only understanding, or pasted code without execution intent.
 
 Once explicitly activated, keep this workflow active for the current engineering task through completion. Interpret urgency and implementation wording—such as “直接修”“马上做”“不要再问” or “跳过计划”—as task intent or authorization, never as permission to skip a required stage. End the active workflow early only when the user explicitly asks to exit, cancel, or stop using `$engineering-workflow`; do not treat an implicit change of tone as cancellation. The invocation itself does not grant write permission: the request still determines `implementation`, `check-only`, or `plan-only`.
+
+## Public Skill stage entry and continuation
+
+The six public orchestration Skills are stages of the same engineering Workflow. When a user directly invokes `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, or `$repo-retrospective`, treat that invocation as entry at the named stage instead of treating the Skill as an isolated one-off answer. Preserve the stage’s own confirmation and no-write boundary, then show the next-stage handoff when the stage returns.
+
+“Continue the full Workflow” means that the stage has a defined next handoff; it does not mean that Codex silently skips confirmation, escalates `check-only` or `plan-only` into implementation, or writes files. A direct public Skill invocation may skip only gates that belong to earlier stages. It must still show the current stage, the next stage, the user action or copyable command, and the consequence of waiting, continuing, or cancelling.
+
+The default stage map is:
+
+- `$task-brief` → `$task-router` after `确认`; `先聊一聊` returns to discussion.
+- `$task-router` → read-only investigation, RCA, Option evaluation, or native Plan according to the route.
+- `$rca-analyze` → `整理 brief` after a confirmed root cause; `只保留结论` is the explicit terminal branch.
+- `$option-explorer` → native Plan or the filled manual Plan request after a direction is selected.
+- native Plan → implementation only after the host’s Implement/return-to-execution action or the required execution confirmation.
+- `$repo-retrospective` → the final repository-environment report; it is an optional terminal stage, not a new engineering stage.
+
+Only the user’s explicit terminal wording (`只分析`, `只保留结论`, `只做计划`, or `取消`) may stop at the current stage. A stage may not stop merely because its local analysis is complete.
 
 ## Intent gate
 
@@ -74,7 +91,7 @@ For Exploration, show this short handoff and stop:
 
 > 你选择结构化探索。Codex 接下来会按目标、场景和约束逐步梳理，不会进入 Route 或修改文件。
 
-`继续讨论`
+`继续聊聊`
 
 > 你想继续用普通对话补充想法。Codex 会继续讨论，不会更新 Brief、Route 或修改文件。
 
@@ -111,7 +128,7 @@ Bug 审查 / RCA
 > 你只需要这次 RCA 的结论。Codex 会结束分析，不会修改文件。
 ```
 
-For an explicit `check-only` request, show the normal five-item `$task-brief` instead; its no-write authorization is preserved through `$task-router`. After `$rca-analyze` returns, reassess the user’s intent. Its result does not automatically enter `$task-brief`, `$task-router`, Plan, or implementation.
+For an explicit `check-only` request, show the normal five-item `$task-brief` instead; its no-write authorization is preserved through `$task-router`. After `$rca-analyze` returns, use the stage continuation handoff: show the RCA result, the next available action, and the exact command that selects it. The result does not grant write permission or silently enter implementation, but it must not disappear without a next-step or explicit terminal choice.
 
 When Exploration is active, each response must add useful reasoning—such as a new hypothesis, trade-off, risk, example, or a focused next question—and may ask only one question at a time. Do not merely paraphrase the latest sentence and do not output a revised brief. If the user clearly asks to brainstorm, generate ideas, or compare possible directions, follow the Local Skill matching rules below; otherwise ordinary discussion stays ordinary discussion. When the user chooses `整理 brief`, summarize the accumulated conversation once through `$task-brief`, then use the normal five-item confirmation gate.
 
@@ -121,7 +138,7 @@ Keep the user’s authorization boundary intact. The workflow has exactly one mo
 
 ## Public Skill surface
 
-The only Skills named in normal user-facing callouts, handoffs, progress updates, and completion summaries are this Workflow and its five orchestration children:
+The only Skills named in normal user-facing callouts, handoffs, progress updates, and completion summaries are these six public orchestration Skills:
 
 - `$engineering-workflow`
 - `$task-brief`
@@ -157,7 +174,7 @@ For an automatic local discussion Skill, show this notice before invoking it in 
 这一阶段只讨论和澄清，不更新 Brief、不进入 Route 或 Plan、不修改文件。如果后面需要写文档或调用其他 Skill，Codex 会单独说明并请你确认。
 
 **切换：**
-`继续普通讨论`
+`继续聊聊`
 
 > 你想离开当前的讨论方式，回到普通对话。Codex 会继续和你讨论，不会自动进入其他流程。
 
@@ -191,7 +208,7 @@ For a user-only Skill, use this handoff instead of trying to invoke it:
 
 > 你不启动这条用户专用流程，而是选择替代能力。Codex 会改用该能力继续。
 
-`继续普通讨论`
+`继续聊聊`
 
 > 你想回到普通对话。Codex 会停在当前流程之外，不会启动该辅助模式。
 
@@ -202,7 +219,7 @@ For a user-only Skill, use this handoff instead of trying to invoke it:
 
 Only when the user has already explicitly named a user-only Skill and needs an exact invocation string may the Workflow repeat that name; this exception is an entry instruction, not a normal progress label.
 
-Do not emit this notice and then wait for a second confirmation when the user has already made the Skill intent explicit; that would turn automatic matching back into the missing handoff. For a merely possible match, or any Skill that is user-only, high-cost, writes a document, delegates work, or changes the conversation mode without explicit intent, use the four-line handoff and wait. Auto-starting a conversation-first Skill authorizes only its discussion phase; any later write, delegation, cost, or next-Skill transition still uses the applicable confirmation. After a local Skill returns, re-evaluate the intent; do not automatically chain another Skill or jump to `$task-brief` until the user asks to `整理 brief` or gives an action-ready request.
+Do not emit this notice and then wait for a second confirmation when the user has already made the Skill intent explicit; that would turn automatic matching back into the missing handoff. For a merely possible match, or any Skill that is user-only, high-cost, writes a document, delegates work, or changes the conversation mode without explicit intent, use the four-line handoff and wait. Auto-starting a conversation-first Skill authorizes only its discussion phase; any later write, delegation, cost, or next-Skill transition still uses the applicable confirmation. After an internal local Skill returns, re-evaluate the intent. A direct public orchestration Skill is different: it already identifies the Workflow stage, so the Skill must return a stage handoff rather than requiring the user to rediscover the next stage from an isolated result.
 
 ## Handoff contract
 
@@ -234,6 +251,10 @@ Every permission-requiring transition from one Skill or native stage to another 
 
 > 你要补充或修改当前判断。Codex 会按照你的说明重新整理这张交接卡，然后再请你确认。
 
+`继续聊聊`
+
+> 你暂时不确认当前这张交接卡，想继续讨论。Codex 会保留当前内容，回到讨论，不会进入下一阶段或修改文件。
+
 `取消`
 
 > 你要停止当前流程。Codex 不会进入下一阶段，也不会修改文件。
@@ -252,6 +273,17 @@ Keep the card short enough to scan. Do not hide required evidence or constraints
 - 把内部状态改写成用户能理解的决定和后果；不展示不会影响用户选择的内部流程细节。
 - 需要复制的内容单独成段；口令后空一行，再用 `> ` 开头的段落解释选择结果。
 
+### 轻量中文润色（humanizer-zh）
+
+每次准备输出正文时，先保留技术事实，再做一轮轻量中文改写。只改表达，不改事实、权限、数值或结论：
+
+- 固定术语保留 `Brief`、`Route`、`RCA`、`Plan`、`Option`、`native Plan`、`implementation`、`Review`、`Worktree`、`Goal`；普通的 `task`、`path`、`flow`、`handoff` 改成“任务”“处理逻辑/代码位置”“执行顺序”“下一步交接”。
+- 技术标识符后面紧跟一句中文解释它具体做什么；不要把标识符或英文名词直接拼成中文复合词。
+- 遇到两个以上抽象名词连在一起，改成“谁 + 做什么 + 结果”。例如把“键盘事务替换路径”改成“键盘输入的文本替换逻辑”。
+- 每句话都写出主语和动作。把“问题集中在”“进入下一阶段”“完成判断”改成“代码在……时……”“你确认后，Codex 会……”。
+- 删除没有机制支撑的形容词和机械连接词；如果半技术用户需要猜这句话是什么意思，就重写，不要继续堆术语。
+- 输出前朗读一遍，确认开头先回答问题，后面再说明证据、影响、下一步和边界。
+
 For the native Plan boundary, follow `$task-router`’s handoff. Never emit a bare or guessed `/plan` instruction. When the task requires native Plan and the host has no callable entry, immediately output a filled `Plan 请求` with the fixed field order `任务目标`、`已确认的 RCA/证据`、`范围`、`非目标`、`约束`、`验收与验证`, followed by `请只制定 native Plan，不修改文件、不执行实现、不提交。`, and tell the user to enter Plan through the host UI and paste it into the current conversation. Do not require prior confirmation that manual Plan exists and do not require a separate text acknowledgement after planning. Distinguish three observable states: the request has been shown, a real native Plan result is visible, and execution has been authorized either by the host’s Implement/return-to-execution action or, when no such action is observable, by `确认计划，执行`. A visible result needs no re-paste or upload. `update_plan` remains a checklist/progress tool, not native Plan.
 
 An Exploration handoff is different from a task correction: `先聊一聊`/`进入探索` freezes the current brief, `进入结构化探索` explicitly selects the ideation capability, and `整理 brief` is the only reply that resumes task definition. If the user already clearly asks for brainstorming, the Workflow may auto-call it with the notice above; until a local Skill or ordinary discussion returns to action-ready intent, do not route, plan, write, or call Option Explorer. A local Skill’s later document or implementation step still needs the applicable confirmation.
@@ -262,10 +294,10 @@ After a confirmed handoff, routine read-only investigation, implementation, veri
 
 1. Apply the Intent gate and Local Skill matching before `$task-brief`. Clear requests for a safe, model-invocable discussion Skill may auto-call it with a notice; a symptom-only Bug report enters the read-only `$rca-analyze` path; an explicit `check-only` request gets the five-item brief with no-write mode; ambiguous exploration gets ordinary discussion or a handoff; only Action-ready work gets a five-item brief.
 2. For Action-ready work, use `$task-brief` and stop for the explicit brief confirmation, correction, Exploration switch, or cancellation.
-3. After brief confirmation, use `$task-router`. Display its route handoff and stop for `确认路由` (or `修改：...` / `取消`) before investigation or any native stage. A direct `$task-router` invocation skips only the Workflow brief gate; it still receives this route handoff.
-4. After the confirmed route’s necessary read-only investigation, explicitly report the Option trigger check. If all three Option conditions hold, stop and ask `进入 option` or `跳过 option`; never invoke `$option-explorer` silently. If the conditions do not hold, say `Option 不触发` and flow directly into the already-required next stage: invoke callable Plan, output the filled manual Plan request, or continue the confirmed Small route. Do not insert another text confirmation for a non-triggered optional branch.
-5. Use `$option-explorer` only after `进入 option`. After exploration, stop with the candidates, trade-offs, recommendation, and exact next step; wait for `选择 A`, `选择 B`, `回到 Plan`, or `取消`. A selected option authorizes the direction and the next required planning stage: invoke callable native Plan directly, or immediately output the filled manual Plan request. Do not add another text gate before the Plan input; selection never permits a file write by itself.
-6. Execute the native stages required by the route. A Bug implementation of any size must complete a focused or full RCA and establish the root cause before the first file modification; a Small Bug may do this as the route’s minimal investigation, while a systemic Bug uses the `$rca-analyze` handoff or the route’s required deeper investigation. Small non-Bug implementation may proceed directly after the route handoff; Medium and Large implementation must complete the host’s actual native Plan before the first file modification. If native Plan is not callable, output the filled Plan request immediately, let the user enter Plan through the host UI, and do not write until the real result is visible. For `check-only` or `plan-only`, report the native result and stop without an execution confirmation. For `implementation`, proceed when an explicit host Implement action or return to execution mode supplies authorization; otherwise show the concise plan handoff and wait for `确认计划，执行` (or `修改计划` / `取消`) before writing. For Large, include any proposed Worktree, Goal, ExecPlan persistence, migration, rollback, and milestone choices in that same execution handoff; ask separately only when a native capability requires a user/UI action. Never recreate Plan, Review, Goal, Worktree, Colleagues, or a test framework inside a Skill.
+3. After brief confirmation, use `$task-router`. Display its route handoff and stop for `确认路由` (or `修改：...` / `继续聊聊` / `取消`) before investigation or any native stage. A direct `$task-router` invocation skips only the Workflow brief gate; it still receives this route handoff.
+4. After the confirmed route’s necessary read-only investigation, explicitly report the Option trigger check. If all three Option conditions hold, stop and ask `进入 option`, `跳过 option`, or `继续聊聊`; never invoke `$option-explorer` silently. If the conditions do not hold, say `Option 不触发` and flow directly into the already-required next stage: invoke callable Plan, output the filled manual Plan request, or continue the confirmed Small route. Do not insert another text confirmation for a non-triggered optional branch.
+5. Use `$option-explorer` only after `进入 option`. After exploration, stop with the candidates, trade-offs, recommendation, and exact next step; wait for `选择 A`, `选择 B`, `回到 Plan`, `继续聊聊`, or `取消`. A selected option authorizes the direction and the next required planning stage: invoke callable native Plan directly, or immediately output the filled manual Plan request. Do not add another text gate before the Plan input; selection never permits a file write by itself.
+6. Execute the native stages required by the route. A Bug implementation of any size must complete a focused or full RCA and establish the root cause before the first file modification; a Small Bug may do this as the route’s minimal investigation, while a systemic Bug uses the `$rca-analyze` handoff or the route’s required deeper investigation. Small non-Bug implementation may proceed directly after the route handoff; Medium and Large implementation must complete the host’s actual native Plan before the first file modification. If native Plan is not callable, output the filled Plan request immediately, let the user enter Plan through the host UI, and do not write until the real result is visible. For `check-only` or `plan-only`, report the result and show the next available handoff or an explicit terminal choice; never ask for execution confirmation when that mode forbids implementation. For `implementation`, proceed when an explicit host Implement action or return to execution mode supplies authorization; otherwise show the concise plan handoff and wait for `确认计划，执行` (or `修改计划` / `取消`) before writing. For Large, include any proposed Worktree, Goal, ExecPlan persistence, migration, rollback, and milestone choices in that same execution handoff; ask separately only when a native capability requires a user/UI action. Never recreate Plan, Review, Goal, Worktree, Colleagues, or a test framework inside a Skill.
 7. After implementation, real verification, and any required Review finish, display a completion handoff containing result, checks, review status, actual diff/status, and unresolved items. For Medium/Large work, stop and ask `进入复盘` or `跳过复盘`; do not invoke `$repo-retrospective` automatically. For Small work, offer it only when real recurring repository friction was observed or the user asks for it. The final task summary is always delivered; retrospective is an optional additional stage.
 8. Follow `AGENTS.md` for real verification, `git status`, concise diff summary, and stopping. Never commit or publish automatically.
 
@@ -293,6 +325,10 @@ For the Medium/Large closeout, use this compact card:
 `跳过复盘`
 
 > 你不需要进行复盘。Codex 会保留完成报告并结束当前任务。
+
+`继续聊聊`
+
+> 你想继续讨论完成结果。Codex 会保留完成报告，不会进入复盘或执行其他操作。
 
 `取消`
 
