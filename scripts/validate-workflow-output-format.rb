@@ -78,28 +78,87 @@ PLAN_REQUEST_LABELS = [
 
 SEMANTIC_REQUIREMENTS = {
   'engineering-workflow' => {
-    'native Plan 必须先交接请求再等待结果' => [
-      'a filled `Plan 请求`',
-      'current conversation',
-      'Do not first ask the user to say `Plan 已完成`',
+    'native Plan 不可调用时必须立即交接请求' => [
+      'immediately output a filled `Plan 请求`',
+      'do not require a separate text acknowledgement after planning',
+      'Implement/return-to-execution action',
       '确认计划，执行'
     ]
   },
+  'task-brief' => {
+    '任务摘要四选项必须使用完整用户文案' => [
+      '请确认这份任务摘要。',
+      '`修改：请把……改成……`',
+      '你同意这份任务摘要。Codex 接下来会',
+      '你不同意当前的任务摘要。Codex 会',
+      '你暂时不确认这份任务摘要',
+      '你要停止当前任务。Codex 不会'
+    ]
+  },
   'task-router' => {
-    'user-run Plan 必须区分请求、结果和执行确认' => [
-      'showing the filled request completes only the request handoff',
-      'real native Plan result is observable in the current conversation',
-      'do not ask the user to paste or upload it again',
-      'A bare `Plan 已完成` is not evidence'
+    'user-run Plan 必须先给输入并直接消费可见结果' => [
+      'always show a handoff with a filled, copyable `Plan 请求` immediately',
+      'requiring proof of a manual entry before providing that input creates a deadlock',
+      'Do not require an extra textual completion acknowledgement',
+      'Implement action or the host has otherwise returned the task to execution mode'
     ]
   }
 }.freeze
 
 ROUTING_CASE_REQUIREMENTS = [
-  '当前会话手动进入 Plan',
-  'Output the filled Plan request before any `Plan 已完成` prompt',
-  'Treat the visible native result as returned, do not request a second copy',
-  '当前会话没有真实 Plan 结果'
+  '宿主没有 callable native Plan，也没有预先声明手动 Plan 入口',
+  'Output the filled Plan request immediately',
+  'Consume the visible native result directly',
+  'explicit host Implement/return-to-execution action'
+].freeze
+
+PLAN_BEHAVIOR_SKILL_TARGETS = [
+  '.agents/skills/engineering-workflow/SKILL.md',
+  '.agents/skills/task-router/SKILL.md',
+  '.agents/skills/option-explorer/SKILL.md',
+].freeze
+
+PLAN_BEHAVIOR_DOC_TARGETS = [
+  '.agents/skills/task-router/references/routing-cases.md',
+  'docs/codex-workflow-context.md'
+].freeze
+
+PLAN_COMMAND_PATTERN = /\A\s*`([^`]+)`\s*\z/.freeze
+
+OBSOLETE_PLAN_COMPLETION_REPLY = ['Plan', '已完成'].join(' ').freeze
+
+MANUAL_PLAN_SCENARIO_ONE_REQUIREMENTS = [
+  '### Scenario 1 — Medium implementation without a callable Plan entry',
+  '**Step 1 — Workflow reply:**',
+  '**Plan 请求：**',
+  '**Step 2 — User action:**',
+  '**Step 3 — Native Plan reply:**',
+  'No extra textual completion acknowledgement is requested.'
+].freeze
+
+OBSOLETE_PLAN_ENTRY_CONFIRMATION = ['确认进入', 'Plan'].join(' ').freeze
+OBSOLETE_OPTION_CONTINUE_REPLY = ['确认', '继续'].join.freeze
+
+MANUAL_PLAN_SCENARIO_TWO_REQUIREMENTS = [
+  '### Scenario 2 — Large implementation after Option selection',
+  '**Step 1 — Option reply:**',
+  '**Step 2 — User selection:**',
+  '**Step 3 — Workflow reply:**',
+  'The selected direction flows directly into callable Plan or the filled manual Plan request.'
+].freeze
+
+OBSOLETE_UNCONDITIONAL_EXECUTION_GATES = [
+  'After native Plan, implementation waits for the user’s execution confirmation.',
+  'After native Plan, implementation waits for `确认计划，执行`',
+  'complete native Plan, then ask `确认计划，执行`'
+].freeze
+
+MANUAL_PLAN_SCENARIO_THREE_REQUIREMENTS = [
+  '### Scenario 3 — Host returns from native Plan to execution',
+  '**Step 1 — Native Plan reply:**',
+  '**Step 2 — User host action:**',
+  '**Step 3 — Workflow execution reply:**',
+  'No completion receipt or duplicate execution confirmation is requested.'
 ].freeze
 
 def relative_path(path)
@@ -136,6 +195,75 @@ end
 
 def add_error(errors, path, line, message)
   errors << "#{relative_path(path)}:#{line}: #{message}"
+end
+
+def response_block?(line)
+  line.match?(/\*\*(?:怎么回复|请确认|请回复|切换)\*\*/)
+end
+
+def command_line?(line)
+  !line.nil? && line.match?(PLAN_COMMAND_PATTERN)
+end
+
+def validate_reply_commands(errors, path, lines)
+  if lines.all? { |_, line| !response_block?(line) }
+    return
+  end
+
+  lines.each do |line_number, line|
+    stripped = line.lstrip
+    next if stripped.empty?
+
+    if stripped.start_with?('- ')
+      add_error(errors, path, line_number, '回复命令不能用 `-` 列表符开头')
+    elsif stripped.start_with?('* ')
+      add_error(errors, path, line_number, '回复命令不能用 `*` 列表符开头')
+    elsif stripped.match?(/\A\d+\.\s*/)
+      add_error(errors, path, line_number, '回复命令不能用数字序号开头')
+    end
+  end
+
+  command_lines = lines.each_with_index.select do |(_, line), _|
+    command_line?(line)
+  end
+
+  if command_lines.empty?
+    add_error(errors, path, lines.first[0], '回复/切换卡片必须包含独占一段的口令行')
+    return
+  end
+
+  indices = lines.map(&:first)
+
+  command_lines.each do |line_number, line|
+    next_index = indices.index(line_number)
+    if next_index.nil?
+      next
+    end
+
+    spacer_entry = lines[next_index + 1]
+    if spacer_entry.nil?
+      add_error(errors, path, line_number, '每个口令后应有空行和独立说明段')
+      next
+    end
+
+    _, spacer_line = spacer_entry
+    unless spacer_line.strip.empty?
+      add_error(errors, path, line_number, '口令和说明必须分成两个段落，中间空一行')
+      next
+    end
+
+    explanation_entry = lines[next_index + 2]
+    if explanation_entry.nil? || explanation_entry[1].strip.empty?
+      add_error(errors, path, line_number, '口令后的空行下面必须有独立说明段')
+      next
+    end
+
+    if command_line?(explanation_entry[1])
+      add_error(errors, path, line_number, '口令后必须是说明，不能直接跟另一个口令')
+    elsif !explanation_entry[1].match?(/\A\s*>\s+\S/)
+      add_error(errors, path, explanation_entry[0], '口令的说明必须以 `> ` 开头，以便与口令明显分开')
+    end
+  end
 end
 
 def validate_plan_request_order(errors, path, blocks)
@@ -212,18 +340,7 @@ def validate_block(errors, path, block)
     end
   end
 
-  if lines.any? { |_, line| line.match?(/怎么回复|请确认|请回复|切换/) }
-    reply_items = lines.select { |_, line| line.strip.start_with?('- ') }
-    if reply_items.length < 2
-      add_error(errors, path, block[:start_line], '包含回复/切换动作的卡片必须把选项拆成至少两条列表项')
-    end
-
-    reply_items.each do |line_number, line|
-      command_count = line.scan(/`[^`]+`/).length
-      add_error(errors, path, line_number, '每个回复列表项只能包含一个口令') unless command_count == 1
-      add_error(errors, path, line_number, '回复列表项不能用分号串联多个动作') if line.include?('；')
-    end
-  end
+  validate_reply_commands(errors, path, lines) if lines.any? { |_, line| line.match?(/怎么回复|请确认|请回复|切换/) }
 end
 
 errors = []
@@ -276,6 +393,63 @@ routing_cases = File.read(routing_cases_path)
 missing_routing_cases = ROUTING_CASE_REQUIREMENTS.reject { |token| routing_cases.include?(token) }
 unless missing_routing_cases.empty?
   add_error(errors, routing_cases_path, 1, "手动 Plan 验收案例缺少：#{missing_routing_cases.join('、')}")
+end
+
+PLAN_BEHAVIOR_SKILL_TARGETS.each do |relative|
+  path = File.join(ROOT, relative)
+  next unless File.read(path).include?(OBSOLETE_PLAN_COMPLETION_REPLY)
+
+  add_error(errors, path, 1, '仍包含无效的 Plan 文字完成回执')
+end
+
+
+missing_scenario_one = MANUAL_PLAN_SCENARIO_ONE_REQUIREMENTS.reject do |token|
+  routing_cases.include?(token)
+end
+unless missing_scenario_one.empty?
+  add_error(errors, routing_cases_path, 1, "真实验收场景 1 缺少：#{missing_scenario_one.join('、')}")
+end
+
+plan_entry_targets = PLAN_BEHAVIOR_SKILL_TARGETS
+plan_entry_targets.each do |relative|
+  path = File.join(ROOT, relative)
+  next unless File.read(path).include?(OBSOLETE_PLAN_ENTRY_CONFIRMATION)
+
+  add_error(errors, path, 1, '仍包含选择 Option 后的冗余 Plan 入口确认')
+end
+
+
+PLAN_BEHAVIOR_SKILL_TARGETS.each do |relative|
+  path = File.join(ROOT, relative)
+  next unless File.read(path).include?(OBSOLETE_OPTION_CONTINUE_REPLY)
+
+  add_error(errors, path, 1, '仍包含 Option 不触发后的冗余继续确认')
+end
+
+
+missing_scenario_two = MANUAL_PLAN_SCENARIO_TWO_REQUIREMENTS.reject do |token|
+  routing_cases.include?(token)
+end
+unless missing_scenario_two.empty?
+  add_error(errors, routing_cases_path, 1, "真实验收场景 2 缺少：#{missing_scenario_two.join('、')}")
+end
+
+
+(PLAN_BEHAVIOR_SKILL_TARGETS + PLAN_BEHAVIOR_DOC_TARGETS).uniq.each do |relative|
+  path = File.join(ROOT, relative)
+  content = File.read(path)
+  obsolete = OBSOLETE_UNCONDITIONAL_EXECUTION_GATES.select { |token| content.include?(token) }
+  next if obsolete.empty?
+
+  add_error(errors, path, 1, "仍包含宿主已授权执行后的重复确认：#{obsolete.join('、')}")
+end
+
+
+missing_scenario_three = MANUAL_PLAN_SCENARIO_THREE_REQUIREMENTS.reject do |token|
+  routing_cases.include?(token)
+end
+unless missing_scenario_three.empty?
+  add_error(errors, routing_cases_path, 1, "真实验收场景 3 缺少：#{missing_scenario_three.join('、')}")
 end
 
 if errors.empty?

@@ -30,12 +30,23 @@ Display exactly these five items, in this order. Use Markdown so the first line 
 **验收标准/待确认项：**
 可观察的完成条件，以及需要确认的关键决定。
 
-请确认以上 brief。
+请确认这份任务摘要。
 
-- `确认`：继续路由
-- `修改：...`：重写完整 brief
-- `先聊一聊`：冻结草案并进入探索
-- `取消`：停止
+`确认`
+
+> 你同意这份任务摘要。Codex 接下来会判断这个任务应该进入哪条工作流程，但不会因此直接修改文件。
+
+`修改：请把……改成……`
+
+> 你不同意当前的任务摘要。Codex 会按照你写的要求重新整理完整摘要，然后再次请你确认。
+
+`先聊一聊`
+
+> 你暂时不确认这份任务摘要，想先继续讨论。Codex 会保留当前摘要作为未确认草案；讨论期间不会进入任务路由、Plan 或实施。等你明确说“整理任务摘要”后，Codex 才会重新整理摘要并再次请你确认。
+
+`取消`
+
+> 你要停止当前任务。Codex 不会继续路由、规划或实施。
 ```
 
 Fold references into `当前上下文/证据` and open questions into `验收标准/待确认项`; do not add a sixth visible heading.
@@ -44,6 +55,6 @@ When the brief follows RCA, include the confirmed symptom, reproduction/evidence
 
 Preserve explicit user wording such as “只分析”, “只做计划”, “不要修改文件”, or “只检查”. Do not invent requirements, implementation choices, tests, or success metrics. Mark genuinely unknown details as unknown or leave them open.
 
-When invoked internally by `$engineering-workflow`, display the complete five-item brief and end the fifth item with `请确认以上 brief。` followed by a separate list: `确认` continues to `$task-router`, `修改：...` regenerates the complete brief, `先聊一聊` freezes the snapshot and enters Exploration mode, and `取消` stops the Workflow. Stop and wait for a subsequent user response. Do not invoke `$task-router`, native Plan, or modify files during this wait. When explicitly invoked as `$task-brief`, return the five-item brief only and do not activate `$engineering-workflow` or `$task-router`; a standalone brief never grants routing or write authorization.
+When invoked internally by `$engineering-workflow`, display the complete five-item brief and end the fifth item with the exact four command-and-explanation blocks above. Use `请确认这份任务摘要。` as the visible heading. Each command and each explanation is its own paragraph, separated by one blank line; every explanation paragraph must start with the Markdown blockquote marker `> `. Do not shorten the explanations into internal-state labels such as `继续路由`, `重写 brief`, or `停止`. The explanation must first say what the user's choice means and then say what Codex will do next. Stop and wait for a subsequent user response. Do not invoke `$task-router`, native Plan, or modify files during this wait. When explicitly invoked as `$task-brief`, return the five-item brief only and do not activate `$engineering-workflow` or `$task-router`; a standalone brief never grants routing or write authorization.
 
 Ask at most one question, and only when the missing answer would clearly change implementation direction, authorization, compatibility, data safety, or acceptance. Otherwise state the assumption briefly in `验收标准/待确认项` and let the confirmed `$task-router` or repository investigation resolve it. An explicit `$task-brief` request returns the brief without implementing the task.

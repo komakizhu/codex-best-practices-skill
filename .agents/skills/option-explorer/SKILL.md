@@ -29,8 +29,13 @@ When called internally without an already-confirmed `进入 option` handoff, sto
 **请确认：**
 现在是否进入 Option？
 
-- `进入 option`：开始探索
-- `跳过 option`：回到正常 Plan
+`进入 option`
+
+> 开始探索
+
+`跳过 option`
+
+> 回到正常 Plan
 ```
 
 `进入 option` is required for internal entry. The caller’s confirmed Option card satisfies this requirement; do not ask for the same confirmation a second time. An explicit direct `$option-explorer` invocation already counts as opt-in, but still requires the three conditions to be checked; if they do not hold, return the compact reason and do not explore.
@@ -47,14 +52,31 @@ After explicit opt-in, use only the native exploration capability actually expos
 等待你选择方案，再回到所需的 native Plan/执行路线。
 
 **请回复：**
-- `选择 A`：选择方案 A
-- `选择 B`：选择方案 B
-- `A`：使用简写选择方案 A
-- `B`：使用简写选择方案 B
-- `回到 Plan`：返回 Plan
-- `取消`：停止
+`选择 A`
+
+> 选择方案 A
+
+`选择 B`
+
+> 选择方案 B
+
+`A`
+
+> 使用简写选择方案 A
+
+`B`
+
+> 使用简写选择方案 B
+
+`回到 Plan`
+
+> 返回 Plan
+
+`取消`
+
+> 停止
 ```
 
-Do not present the exploration as a native Review or Plan. A selected option authorizes the direction only; after selection, return to the next native Plan handoff and wait for `确认进入 Plan` before entering it. It does not authorize file writes or bypass a required native Plan.
+Do not present the exploration as a native Review or Plan. A selected option authorizes the direction and the next required planning stage: invoke callable native Plan directly, or immediately return the filled manual Plan request when Plan is not callable. Do not insert another text confirmation between option selection and the Plan input. Selection does not authorize file writes or bypass the required native Plan result.
 
 If the host does not expose a suitable native exploration capability, say so and return a compact decision frame for the user or native Plan to resolve. Never simulate Colleagues, Best-of-N, or parallel agents with a custom prompt and claim that the native capability ran.

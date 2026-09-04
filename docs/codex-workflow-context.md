@@ -16,26 +16,50 @@ On the current local host, Codex loads installed Skills from `~/.codex/skills`; 
 
 ### Human handoff protocol
 
-Every handoff starts with one bold, single-sentence conclusion. After that, use the four semantic fields `已完成`、`下一步`、`需要你确认`、`怎么回复`; each field name occupies its own bold line, its details use normal text, and each reply command gets its own list item. Route, mode, type, and restrictions are separate metadata lines. The standard replies are:
+Every handoff starts with one bold, single-sentence conclusion. After that, use the four semantic fields `已完成`、`下一步`、`需要你确认`、`怎么回复`; each field name occupies its own bold line, and its details use normal text. Reply commands are single-line code spans, each on its own line without list markers, followed by one blank line and an explanation paragraph beginning with `> `. Route, mode, type, and restrictions are separate metadata lines.
 
-- `确认` / `确认路由` — accept the current handoff only.
-- `修改：...` — correct the current handoff and regenerate it.
-- `进入结构化探索` / `继续讨论` / `整理 brief` — choose structured ideation, ordinary discussion, or the boundary back to a task brief when the idea is still exploratory.
-- `继续普通讨论` / `停止当前 Skill` — leave an automatically selected local discussion Skill or return to ordinary discussion.
-- `开始该模式` — enter a user-only local helper when the Workflow has explicitly handed it off; the helper name stays out of normal progress text.
-- `进入 option` / `跳过 option` — opt into or decline extra technical exploration.
-- `整理 brief` / `只保留结论` / `继续调查` — turn a completed RCA into a repair brief, end after analysis, or continue read-only evidence gathering.
-- `确认计划，执行` — accept the native Plan and permit the authorized implementation stage; `执行` is a context-specific shorthand only when the current card explicitly asks for plan approval.
-- `进入复盘` / `跳过复盘` — enter or skip the optional repository retrospective after Medium/Large completion; `复盘` / `跳过` are context-specific short forms.
-- `Plan 已完成` — report after the user has actually completed a host-native Plan when the current host could not invoke it; a real result visible in the current conversation is sufficient and must not be requested again, while a bare phrase is not sufficient.
-- `确认写入` / `只记录` — accept or decline a proposed retrospective change.
-- `取消` — stop the active Workflow without entering the next stage.
+`确认` / `确认路由`
+accept the current handoff only.
+
+`修改：...`
+
+> correct the current handoff and regenerate it.
+
+`进入结构化探索` / `继续讨论` / `整理 brief`
+choose structured ideation, ordinary discussion, or the boundary back to a task brief when the idea is still exploratory.
+
+`继续普通讨论` / `停止当前 Skill`
+leave an automatically selected local discussion Skill or return to ordinary discussion.
+
+`开始该模式`
+
+> enter a user-only local helper when the Workflow has explicitly handed it off; the helper name stays out of normal progress text.
+
+`进入 option` / `跳过 option`
+opt into or decline extra technical exploration.
+
+`整理 brief` / `只保留结论` / `继续调查`
+turn a completed RCA into a repair brief, end after analysis, or continue read-only evidence gathering.
+
+`确认计划，执行`
+
+> accept the native Plan and permit the authorized implementation stage; `执行` is a context-specific shorthand only when the current card explicitly asks for plan approval.
+
+`进入复盘` / `跳过复盘`
+enter or skip the optional repository retrospective after Medium/Large completion; `复盘` / `跳过` are context-specific short forms.
+
+`确认写入` / `只记录`
+accept or decline a proposed retrospective change.
+
+`取消`
+
+> stop the active Workflow without entering the next stage.
 
 ### Native Plan boundary
 
-Native Plan is a host capability, not a prompt-created Skill mode. `update_plan` is a checklist/progress tool and does not enter or exit native Plan. When a callable native Plan is unavailable, the Workflow may provide a user-run manual Plan handoff only when the host explicitly exposes or confirms that entry. The handoff must first contain a filled `Plan 请求` with this fixed field order: `任务目标`, `已确认的 RCA/证据`, `范围`, `非目标`, `约束`, `验收与验证`, followed by `请只制定 native Plan，不修改文件、不执行实现、不提交。`; the user then manually enters Plan mode and pastes it into the current conversation. If the entry is not confirmed, report the missing capability and stop rather than issuing an unverified command or simulating a Plan.
+Native Plan is a host capability, not a prompt-created Skill mode. `update_plan` is a checklist/progress tool and does not enter or exit native Plan. When a callable native Plan is unavailable, the Workflow immediately provides a filled `Plan 请求` with this fixed field order: `任务目标`, `已确认的 RCA/证据`, `范围`, `非目标`, `约束`, `验收与验证`, followed by `请只制定 native Plan，不修改文件、不执行实现、不提交。`; the user then enters Plan through the host UI and pastes the request into the current conversation. The request is useful before manual entry and therefore never depends on prior proof that the entry exists.
 
-The user-run fallback has two distinct checkpoints: the filled Plan request must be shown before the user action, and the fallback Plan is complete only when the real native result is observable in the current conversation or returned by the user. If the result is already visible in the current conversation, do not ask the user to paste or upload it again. `Plan 已完成` without that result does not authorize the next stage or any write.
+The user-run path uses observable host state rather than a textual completion receipt. The Plan stage completes when the real native result appears in the current conversation. If the user then chooses the host’s Implement action or the host returns the task to execution mode, that transition supplies execution authorization; otherwise the Workflow asks `确认计划，执行`. Never ask the user to paste, upload, or acknowledge a result that is already visible.
 
 ## Current AGENTS.md Direction
 
@@ -86,7 +110,7 @@ Main orchestration entry. Dormant during ordinary discussion. Activates only whe
 
 Keep it thin. First separate an exploratory idea, a symptom-only Bug report, and action-ready work, then match a suitable local helper from the current session. A clear request for a safe, model-invocable discussion or read-only RCA stage may be auto-started after a visible generic notice; a user-only, high-cost, write-capable, or ambiguous helper gets a short handoff instead. Exploratory input must not cause a five-item brief to be rewritten after every sentence. A symptom-only Bug report goes to `$rca-analyze` and does not become a repair brief. When the user says `整理 brief`, or the request is already action-ready, synthesize one brief snapshot, then route it to the right workflow, optionally offer solution exploration when a high-value technical fork exists, and offer—not automatically run—a lightweight repository retrospective at the end.
 
-It must not reimplement native Codex workflows. It must show a handoff and wait after the brief, after routing, after a completed RCA before repair, before Option, after Option, after native Plan, and before optional retrospective entry. Exploration has its own short handoff and does not enter Router, Plan, or execution until the user explicitly chooses `整理 brief` and confirms the resulting brief. A local Skill’s own hard gates remain authoritative, and the Workflow never auto-chains multiple local Skills.
+It must not reimplement native Codex workflows. It must show a handoff and wait after the brief, after routing, after a completed RCA before repair, before a triggered Option, after Option exploration, after native Plan only when the host has not already supplied execution authorization, and before optional retrospective entry. A negative Option check flows directly into the required next stage without another confirmation. Exploration has its own short handoff and does not enter Router, Plan, or execution until the user explicitly chooses `整理 brief` and confirms the resulting brief. A local Skill’s own hard gates remain authoritative, and the Workflow never auto-chains multiple local Skills.
 
 ### Local Skill matching
 
@@ -158,13 +182,13 @@ Do not force Plan, Worktree, Goal, or formal Review for routine Small tasks.
 
 Medium: ordinary bugs, multi-file features, behavior changes, performance/concurrency issues, or moderate refactors.
 
-Medium implementation must complete the host’s actual native Plan after read-only investigation and before any file write. If native Plan is unavailable, use the capability-aware `$task-router` handoff: issue a filled `Plan 请求` only when the host confirms a user-run manual Plan entry, otherwise report the missing entry and stop. A short internal outline or `update_plan` is not a substitute. Require the actual native result before accepting `Plan 已完成`; for `check-only` or `plan-only`, report the result without entering implementation.
+Medium implementation must complete the host’s actual native Plan after read-only investigation and before any file write. If native Plan is not callable, use the `$task-router` handoff to issue a filled `Plan 请求` immediately, then wait for the actual native result. A short internal outline or `update_plan` is not a substitute; for `check-only` or `plan-only`, report the result without entering implementation.
 
-After implementation, always run real project verification. Use native Review/Colleagues reviewer when the change has meaningful logic, regression, concurrency, performance, or multi-module risk. Do not force heavyweight Review for low-risk Medium changes. After native Plan, implementation waits for the user’s execution confirmation.
+After implementation, always run real project verification. Use native Review/Colleagues reviewer when the change has meaningful logic, regression, concurrency, performance, or multi-module risk. Do not force heavyweight Review for low-risk Medium changes. After native Plan, an explicit host Implement/return-to-execution action authorizes implementation; ask for a text confirmation only when that host authorization is not observable.
 
 Large: migrations, persistence format changes, core architecture changes, protocol/public API migrations, cross-subsystem work, multi-stage changes, rollback-sensitive work, or tasks requiring durable state.
 
-Large should normally use native Plan and a persisted ExecPlan. If native Plan is unavailable, follow the capability-aware `$task-router` handoff; only a host-confirmed user-run manual Plan entry receives a filled `Plan 请求`, otherwise report the missing entry and stop. Worktree and Goal are conditional, not automatic.
+Large should normally use native Plan and a persisted ExecPlan. If native Plan is not callable, follow the `$task-router` handoff and issue the filled `Plan 请求` immediately; no implementation or ExecPlan write begins until the native result is visible and execution is authorized. Worktree and Goal are conditional, not automatic.
 
 Use Worktree when isolation, parallelism, long-running experimentation, or a large working-tree blast radius makes isolation valuable.
 
@@ -187,7 +211,7 @@ Consider it only when:
 
 Before using native Colleagues / Best-of-N / parallel exploration, ask whether the user wants the extra token/cost expenditure. If the user declines, continue with normal Plan.
 
-After exploration, show the recommendation and wait for `选择 A/B` or `回到 Plan`; choosing a direction does not bypass the next native Plan handoff or authorize writes.
+After exploration, show the recommendation and wait for `选择 A/B` or `回到 Plan`. That choice flows directly into callable native Plan or the filled manual Plan request; do not insert another text confirmation. Choosing a direction still does not authorize writes.
 
 ## `$repo-retrospective`
 
@@ -227,7 +251,7 @@ Keep context efficient. Do not turn `AGENTS.md` into a task log.
 
 Whenever Codex already has an appropriate native capability, use it instead of recreating it in a Skill.
 
-- planning → native Plan; user-run manual Plan only when the host confirms it
+- planning → native Plan; when it is not callable, immediately provide the filled request for user-run Plan through the host UI
 - code review → native Review / `/review` or Colleagues reviewer
 - isolation → native Worktree
 - long-running closed-loop execution → native Goal / `/goal`
@@ -260,7 +284,7 @@ Persist the confirmed long-running plan in the repository using the repository's
 
 `docs/exec-plans/YYYY-MM-DD-<task>.md`
 
-An ExecPlan should be a living document and may include:
+> An ExecPlan should be a living document and may include:
 - Goal
 - Non-goals
 - Current state

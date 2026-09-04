@@ -44,7 +44,7 @@ For language-driven Skill routing, inspect the complete chain rather than adding
 
 `user wording → intent classification → Skill description/trigger match → invocation policy → parent Workflow allowlist/boundary → selected Skill`
 
-The root cause may be an incomplete rule class, conflicting boundary, stale acceptance case, or missing sibling mapping. The fix should address that source and its neighboring cases, not only the sentence that exposed it.
+> The root cause may be an incomplete rule class, conflicting boundary, stale acceptance case, or missing sibling mapping. The fix should address that source and its neighboring cases, not only the sentence that exposed it.
 
 ### 4. Test hypotheses proportionally
 
@@ -129,10 +129,21 @@ RCA 已完成。
 是否把这次分析转成授权的修复任务；当前不写文件。
 
 **怎么回复：**
-- `整理 brief`：进入修复任务定义
-- `只保留结论`：结束 RCA
-- `继续调查`：补充 RCA 证据
-- `取消`：停止
+`整理 brief`
+
+> 进入修复任务定义
+
+`只保留结论`
+
+> 结束 RCA
+
+`继续调查`
+
+> 补充 RCA 证据
+
+`取消`
+
+> 停止
 ```
 
 If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write.
