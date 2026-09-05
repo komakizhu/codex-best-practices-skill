@@ -121,7 +121,7 @@ STAGE_CONTINUITY_REQUIREMENTS = {
     'Stage completion contract',
     'direct public `$task-router` entry',
     'next-stage handoff',
-    'show whether the user wants `整理 brief`'
+    'show the result handoff with `整理 brief`'
   ],
   'rca-analyze' => [
     'public Skill is invoked directly',
@@ -146,6 +146,34 @@ CONTINUATION_COMMAND_REQUIREMENTS = {
   'task-brief' => '`先聊一聊`'
 }.freeze
 
+PLAN_ONLY_HANDOFF_REQUIREMENTS = [
+  '`只保留方案`',
+  '`转成实施任务`',
+  '`继续聊聊`',
+  '`取消`',
+  '转成实施任务` starts a new Brief/Route authorization cycle',
+  'For `plan-only`, show the planning-end card'
+].freeze
+
+EXTERNAL_SKILL_HANDOFF_REQUIREMENTS = [
+  'temporarily calls an external Skill',
+  'external Skill must not be edited',
+  'start with the conclusion',
+  'subject-action-result Chinese',
+  'return the result to'
+].freeze
+
+EXTERNAL_WRAPPER_REQUIREMENTS = {
+  '.agents/skills/engineering-workflow/SKILL.md' => [
+    '本次调用外部 Skill 时，先附加下面这段临时说明',
+    '不要替 Workflow 结束任务'
+  ],
+  'docs/codex-workflow-context.md' => [
+    '本次调用外部 Skill 时使用这段临时说明',
+    '不要替 Workflow 结束任务'
+  ]
+}.freeze
+
 STALE_CONTINUITY_RULES = {
   '.agents/skills/engineering-workflow/SKILL.md' => [
     'After a local Skill returns, re-evaluate the intent; do not automatically chain another Skill or jump to `$task-brief`',
@@ -154,7 +182,8 @@ STALE_CONTINUITY_RULES = {
   '.agents/skills/task-router/SKILL.md' => [
     'reports findings and stops',
     'independent lower-level entry and does not require the Workflow’s Brief gate',
-    'Never auto-chain multiple local Skills'
+    'Never auto-chain multiple local Skills',
+    'For a `plan-only` result, report the Plan and state that the task ends at planning; do not ask for an execution confirmation'
   ],
   '.agents/skills/rca-analyze/SKILL.md' => [
     'Do not silently chain `$task-brief`, `$task-router`'
@@ -211,7 +240,9 @@ PLAN_BEHAVIOR_DOC_TARGETS = [
 
 PLAN_COMMAND_PATTERN = /\A\s*`([^`]+)`\s*\z/.freeze
 
-OBSOLETE_PLAN_COMPLETION_REPLY = ['Plan', '已完成'].join(' ').freeze
+# The words “Plan 已完成” are valid in a result heading. Only the old
+# instruction that asked the user to send a duplicate acknowledgement is stale.
+OBSOLETE_PLAN_COMPLETION_REPLY = '再回复 `Plan 已完成`'.freeze
 
 MANUAL_PLAN_SCENARIO_ONE_REQUIREMENTS = [
   '### Scenario 1 — Medium implementation without a callable Plan entry',
@@ -462,6 +493,15 @@ TARGETS.each do |skill|
   end
 end
 
+EXTERNAL_WRAPPER_REQUIREMENTS.each do |relative, tokens|
+  path = File.join(ROOT, relative)
+  content = File.read(path)
+  missing = tokens.reject { |token| content.include?(token) }
+  next if missing.empty?
+
+  add_error(errors, path, 1, "外部 Skill 临时说明缺少：#{missing.join('、')}")
+end
+
 SEMANTIC_REQUIREMENTS.each do |skill, requirements|
   path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
   content = File.read(path)
@@ -489,6 +529,22 @@ CONTINUATION_COMMAND_REQUIREMENTS.each do |skill, command|
   next if content.include?(command)
 
   add_error(errors, path, 1, "阶段等待卡缺少固定口令：#{command}")
+end
+
+task_router_path = File.join(ROOT, '.agents', 'skills', 'task-router', 'SKILL.md')
+task_router_content = File.read(task_router_path)
+missing_plan_only = PLAN_ONLY_HANDOFF_REQUIREMENTS.reject { |token| task_router_content.include?(token) }
+unless missing_plan_only.empty?
+  add_error(errors, task_router_path, 1, "plan-only 收尾契约缺少：#{missing_plan_only.join('、')}")
+end
+
+TARGETS.each do |skill|
+  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  content = File.read(path)
+  missing_external = EXTERNAL_SKILL_HANDOFF_REQUIREMENTS.reject { |token| content.include?(token) }
+  next if missing_external.empty?
+
+  add_error(errors, path, 1, "外部 Skill 临时调用契约缺少：#{missing_external.join('、')}")
 end
 
 STALE_CONTINUITY_RULES.each do |relative, tokens|

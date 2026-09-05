@@ -574,6 +574,42 @@ Plan 需要说明：
 
 **验收标准：** 先说用户最关心的结果，再说明测试、Review、工作区和提交状态；不使用“进入闭环”这类空话。
 
+## Public Skill multi-turn regression transcripts
+
+These transcripts are machine-checked by `scripts/validate-workflow-continuity.rb`. They test the order of user replies and Workflow cards, not just whether a Skill file contains a keyword. The final case is the archived bad pattern and must remain rejected.
+
+### Regression 1 — Brief confirmation reaches Route
+
+```text
+User: $task-brief 请整理这个修复任务
+Assistant: Brief card with `确认`
+User: 确认
+Assistant: Route card with `确认路由`, `继续聊聊`, and `取消`
+```
+
+Expected result: the second Assistant reply is a Route card with `已完成` and `下一步`; it does not jump to Plan or implementation.
+
+### Regression 2 — plan-only ends with a visible choice
+
+```text
+User: $task-router 只制定方案，不修改文件
+Assistant: Route card
+User: 确认路由
+Assistant: Plan result followed by `只保留方案`, `转成实施任务`, `继续聊聊`, and `取消`
+```
+
+Expected result: the plan-only mode remains no-write. `转成实施任务` starts a new Brief/Route authorization cycle; no command asks the user to reply “Plan 已完成”.
+
+### Regression 3 — External Skill returns control to Workflow
+
+```text
+User: $engineering-workflow 调用外部设计 Skill
+Assistant: External result rewritten with a clear conclusion
+Assistant: Workflow handoff with `下一步`, a standalone command, and a `> ` explanation
+```
+
+Expected result: the external Skill file is unchanged, and the Workflow adds the next-stage handoff after the external result.
+
 ## Should enter RCA
 
 | User request | Expected result |

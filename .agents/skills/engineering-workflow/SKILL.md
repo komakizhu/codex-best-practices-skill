@@ -30,6 +30,20 @@ The default stage map is:
 
 Only the user’s explicit terminal wording (`只分析`, `只保留结论`, `只做计划`, or `取消`) may stop at the current stage. A stage may not stop merely because its local analysis is complete.
 
+### Cross-turn continuation contract
+
+Once the user explicitly invokes any public Workflow Skill, the Workflow remains active for that task across reply turns. The next user command is interpreted against the last visible card; the user does not need to invoke the next Skill again. The current stage must either render the next stage’s card directly or state a terminal boundary with a choice that explains its consequence. Reading another `SKILL.md` in a terminal is repository inspection, not a host-level Skill invocation and not a substitute for rendering the handoff.
+
+Keep the six public Skills explicit-only (`allow_implicit_invocation: false`). This prevents ordinary repository requests from activating the Workflow while still allowing an explicitly selected stage to continue its own Workflow contract.
+
+When the Workflow calls an external Skill, prepend a one-call instruction: keep that Skill’s technical and safety rules, start with the conclusion, split multiple facts into bullets, use subject-action-result Chinese, and return the result to the Workflow. The external Skill must not be edited and does not own the Workflow’s final handoff; the calling Workflow stage adds that handoff after the result returns.
+
+When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.
+
+本次调用外部 Skill 时，先附加下面这段临时说明；它只影响本次调用，不会写入外部 Skill：
+
+> 请保留你的专业判断、技术术语和安全边界。输出先写一句结论；有两个以上事实、风险或步骤时使用 bullet；每句话写清楚谁做什么、结果是什么。完成后把结果交还给当前 Workflow，不要替 Workflow 结束任务，也不要修改你的 Skill 文件。
+
 ## Intent gate
 
 Before invoking `$task-brief`, classify the current conversation:
@@ -300,6 +314,8 @@ After a confirmed handoff, routine read-only investigation, implementation, veri
 6. Execute the native stages required by the route. A Bug implementation of any size must complete a focused or full RCA and establish the root cause before the first file modification; a Small Bug may do this as the route’s minimal investigation, while a systemic Bug uses the `$rca-analyze` handoff or the route’s required deeper investigation. Small non-Bug implementation may proceed directly after the route handoff; Medium and Large implementation must complete the host’s actual native Plan before the first file modification. If native Plan is not callable, output the filled Plan request immediately, let the user enter Plan through the host UI, and do not write until the real result is visible. For `check-only` or `plan-only`, report the result and show the next available handoff or an explicit terminal choice; never ask for execution confirmation when that mode forbids implementation. For `implementation`, proceed when an explicit host Implement action or return to execution mode supplies authorization; otherwise show the concise plan handoff and wait for `确认计划，执行` (or `修改计划` / `取消`) before writing. For Large, include any proposed Worktree, Goal, ExecPlan persistence, migration, rollback, and milestone choices in that same execution handoff; ask separately only when a native capability requires a user/UI action. Never recreate Plan, Review, Goal, Worktree, Colleagues, or a test framework inside a Skill.
 7. After implementation, real verification, and any required Review finish, display a completion handoff containing result, checks, review status, actual diff/status, and unresolved items. For Medium/Large work, stop and ask `进入复盘` or `跳过复盘`; do not invoke `$repo-retrospective` automatically. For Small work, offer it only when real recurring repository friction was observed or the user asks for it. The final task summary is always delivered; retrospective is an optional additional stage.
 8. Follow `AGENTS.md` for real verification, `git status`, concise diff summary, and stopping. Never commit or publish automatically.
+
+For `plan-only`, show a planning-end card after the Plan result. The card must contain `只保留方案`, `转成实施任务`, `继续聊聊`, and `取消`; `转成实施任务` starts a new Brief/Route authorization cycle and never writes files by itself.
 
 This Skill does not implement planning, review, goals, worktrees, colleague orchestration, or a test framework. It connects the routing skills, can dispatch an available internal discussion helper under the rules above, presents explicit handoffs where permission matters, and preserves every Skill’s own boundaries.
 

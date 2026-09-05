@@ -155,3 +155,7 @@ Codex 已经把现象、复现证据、调用链、根因和影响范围整理�
 ```
 
 If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write. If the user invoked this Skill directly, `整理 brief` is the explicit handoff back into the full repair Workflow; `只保留结论` remains the terminal check-only branch.
+
+For a direct `$rca-analyze` entry, treat the card above as a live Workflow handoff. After `整理 brief`, render the five-item Brief in the next response; do not ask the user to invoke `$task-brief` again. After `只保留结论`, end the RCA explicitly. If an external Skill helped collect evidence, give it only a temporary output instruction and let this Skill add the final handoff.
+
+When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.

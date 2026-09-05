@@ -1,6 +1,6 @@
 interface:
   display_name: "Engineering Workflow"
   short_description: "Route repository work through native Codex capabilities"
-  default_prompt: "Use $engineering-workflow to distinguish exploration, symptom-only Bug reports, and explicit repair requests; send Bug reports through read-only $rca-analyze, then show/confirm brief, route, Option, native Plan, execution, and optional retrospective handoffs. Public child Skills rejoin this same Workflow at their named stage. Apply the lightweight human-language pass: keep fixed technical terms, explain identifiers, and rewrite abstract or mechanically translated Chinese into concrete subject-action-result sentences."
+  default_prompt: "Use $engineering-workflow to distinguish exploration, symptom-only Bug reports, and explicit repair requests; send Bug reports through read-only $rca-analyze, then show/confirm Brief, Route, Option, native Plan, execution, and optional retrospective handoffs. Public child Skills rejoin this same Workflow across reply turns at their named stage without requiring a second Skill invocation. Apply the lightweight human-language pass: keep fixed technical terms, explain identifiers, rewrite abstract or mechanically translated Chinese into concrete subject-action-result sentences, and add temporary formatting instructions around external Skills without editing them."
 policy:
   allow_implicit_invocation: false

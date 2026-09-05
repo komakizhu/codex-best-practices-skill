@@ -11,6 +11,12 @@ Perform a lightweight, evidence-based review of the repository environment after
 
 Do not start this Skill automatically when implementation, verification, or Review finishes. The main Workflow must first show a completion card and wait for `进入复盘`; `跳过复盘` ends the task after the final summary. An explicit `$repo-retrospective` invocation is itself opt-in, but the same authorization and no-write boundaries still apply. This is the optional terminal stage of the engineering Workflow: it reports a repository-environment conclusion and does not silently start another engineering stage.
 
+An explicit `$repo-retrospective` invocation starts this terminal stage directly. After the user chooses `只记录` or `取消`, show the consequence and end the Workflow. After `确认写入`, modify only the stated repository-environment target, verify it, and return the final result; do not silently start Brief, Route, Plan, or another Skill.
+
+If this Workflow temporarily calls an external Skill while collecting retrospective evidence, keep that Skill’s own rules, ask it for conclusion-first subject-action-result Chinese, and return its result to this Skill. Do not modify the external Skill; this Skill owns the terminal handoff.
+
+When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.
+
 After the read-only review, report the result and its terminal or write handoff. Do not return only a list of observations without telling the user what choice is available next.
 
 After the read-only review, report:

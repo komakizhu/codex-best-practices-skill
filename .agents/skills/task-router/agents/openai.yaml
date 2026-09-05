@@ -1,6 +1,6 @@
 interface:
   display_name: "Task Router"
   short_description: "Route a task from the engineering entry point"
-  default_prompt: "Use $task-router to classify this repository task or enter the Workflow at Route when invoked directly; require RCA before any Bug fix, show the route handoff, and wait for route confirmation before the next stage. Keep fixed Workflow terms, explain code identifiers, and use concrete subject-action-result Chinese instead of mechanical translations."
+  default_prompt: "Use $task-router to classify this repository task or enter the Workflow at Route when invoked directly; require RCA before any Bug fix, show the Route handoff, and wait for route confirmation before the next stage. Keep the Workflow active across reply turns, give plan-only a four-command planning-end handoff, preserve fixed terms, explain code identifiers, and use concrete subject-action-result Chinese instead of mechanical translations."
 policy:
   allow_implicit_invocation: false

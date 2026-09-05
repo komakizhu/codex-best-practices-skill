@@ -1,0 +1,122 @@
+---
+cases:
+  - name: task-brief confirmation returns to Route
+    expected: pass
+    events:
+      - actor: user
+        text: "$task-brief 请整理这个修复任务"
+      - actor: assistant
+        text: |
+          **目标：整理修复任务。**
+
+          **验收标准/待确认项：**
+          用户可以确认这份 Brief。
+
+          `确认`
+
+          > 你同意这份任务摘要。Codex 接下来会判断 Route，不会修改文件。
+
+          `先聊一聊`
+
+          > 你暂时不确认这份任务摘要。Codex 会继续讨论，不会修改文件。
+      - actor: user
+        text: "确认"
+      - actor: assistant
+        text: |
+          **结论：Route 已生成，Codex 接下来先做只读调查。**
+
+          **已完成：**
+          Brief 已确认。
+
+          **下一步：**
+          你确认 Route 后，Codex 会开始调查，不会修改文件。
+
+          **怎么回复：**
+          `确认路由`
+
+          > 你同意这条 Route。Codex 接下来开始只读调查，不会修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不确认 Route。Codex 会继续讨论，不会调查或修改文件。
+
+  - name: plan-only result has a terminal handoff
+    expected: pass
+    events:
+      - actor: user
+        text: "$task-router 只制定方案，不修改文件"
+      - actor: assistant
+        text: |
+          **结论：Route 确认后只制定 Plan，不会修改文件。**
+
+          **怎么回复：**
+          `确认路由`
+
+          > 你同意这条 Route。Codex 接下来制定 Plan，不会修改文件。
+      - actor: user
+        text: "确认路由"
+      - actor: assistant
+        text: |
+          **结论：这份 Plan 已完成；本轮只做规划，不会修改文件。**
+
+          **已完成：**
+          Codex 已经写清方案和验证方法。
+
+          **下一步：**
+          你可以保留方案，或者把它重新整理成实施任务。
+
+          **怎么回复：**
+          `只保留方案`
+
+          > 你接受当前方案并结束这次规划。Codex 会保留方案，不进入 implementation。
+
+          `转成实施任务`
+
+          > 你想把方案变成实施任务。Codex 会重新整理 Brief 和授权范围，不会直接修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不结束规划，想继续讨论。Codex 会保留当前方案，不修改文件。
+
+          `取消`
+
+          > 你要取消当前任务。Codex 不会继续规划或执行。
+
+  - name: external Skill returns control to Workflow
+    expected: pass
+    events:
+      - actor: user
+        text: "$engineering-workflow 调用设计 Skill 了解界面问题"
+      - actor: assistant
+        text: |
+          **结论：外部 Skill 已返回设计事实。**
+
+          **已完成：**
+          外部 Skill 保留了技术信息。
+
+          这条结果还没有结束 Workflow。
+      - actor: assistant
+        text: |
+          **结论：Workflow 已接住外部 Skill 的结果，准备继续 Route。**
+
+          **已完成：**
+          Workflow 已把正文改成清楚的主语和动作。
+
+          **下一步：**
+          Codex 会把结果交给 Route，继续判断后续步骤。
+
+          **怎么回复：**
+          `确认路由`
+
+          > 你确认继续。Codex 会进入 Route，不会因为外部 Skill 返回就直接修改文件。
+
+  - name: old plan-only bad case is rejected
+    expected: fail
+    events:
+      - actor: user
+        text: "$task-router 只制定方案"
+      - actor: assistant
+        text: |
+          **结论：方案已经写完，本轮到此结束。**
+
+          实现会把节奏器和 TextInjector 分开，随后再验证。

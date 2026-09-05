@@ -87,6 +87,10 @@ Codex 已经列出方案 A/B（或更多方案）的证据、取舍和推荐。O
 
 Do not present the exploration as a native Review or Plan. A selected option authorizes the direction and the next required planning stage: invoke callable native Plan directly, or immediately return the filled manual Plan request when Plan is not callable. Do not insert another text confirmation between option selection and the Plan input. Selection does not authorize file writes or bypass the required native Plan result. A direct Option entry remains connected to the full Workflow; after the Plan stage, the normal implementation, verification, and completion handoffs apply.
 
+For a direct `$option-explorer` entry, keep the Workflow active after the selection card. The next response must render the native Plan handoff or the filled manual Plan request itself; the user does not need to invoke `$task-router` or `$task-brief` again. If an external Skill was used for comparison, its output is temporary input to this Skill; do not modify that Skill or let it terminate the Workflow.
+
+When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.
+
 ## 真实回复写作规则
 
 Option 的正文要直接说明“为什么要比较、每个方案差在哪里、选了以后会发生什么”：先给结论，再用 bullet 对照方案；每个动作写清主语（你或 Codex）；保留 Option、native Plan、compatibility、rollback 等关键术语，并在第一次出现时用短话说明作用。所有等待选择的卡片都保留 `继续聊聊`，它只返回讨论，不会推进到 Plan 或修改文件。不要只写“开始探索”“返回 Plan”“停止”这类没有主语和后果的状态词。

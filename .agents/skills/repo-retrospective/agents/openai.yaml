@@ -1,6 +1,6 @@
 interface:
   display_name: "Repository Retrospective"
   short_description: "Capture only repeatable repository friction"
-  default_prompt: "Use $repo-retrospective only after the user replies 进入复盘 or explicitly invokes it; show evidence, treat it as the optional terminal stage, and ask 确认写入 before any durable repository change. Keep repository terms, explain them briefly, and describe concrete objects and actions instead of abstract noun chains."
+  default_prompt: "Use $repo-retrospective only after the user replies 进入复盘 or explicitly invokes it; show evidence, treat it as the optional terminal stage, and ask 确认写入 before any durable repository change. Keep this terminal stage active across reply turns until the user chooses 只记录, 确认写入, 继续聊聊, or 取消. Keep repository terms, explain them briefly, and describe concrete objects and actions instead of abstract noun chains."
 policy:
   allow_implicit_invocation: false

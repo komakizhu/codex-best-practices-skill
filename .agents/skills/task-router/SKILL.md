@@ -130,6 +130,10 @@ Every routed stage must end with one visible handoff. The handoff names the curr
 
 For a direct public `$task-router` entry, the Route card is the first stage handoff. After the user confirms it, the Workflow continues through investigation, RCA, Option evaluation, native Plan, implementation, verification, and completion according to the selected mode. No earlier Brief gate is inferred, but no later permission gate is skipped.
 
+If this Workflow temporarily calls an external Skill during investigation, keep that Skill’s own rules, ask it for conclusion-first subject-action-result Chinese, and return its result to this Workflow. Do not modify the external Skill; this Router owns the next-stage handoff.
+
+When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.
+
 For a `check-only` result, use a result handoff instead of ending with findings alone:
 
 ```markdown
@@ -162,11 +166,40 @@ Codex 已经完成当前 Route 允许的检查，并列出证据、影响范围�
 > 你要停止当前任务。Codex 不会继续检查或修改文件。
 ```
 
-For a `plan-only` result, report the Plan and state that the task ends at planning; do not ask for an execution confirmation or imply that a file write is available.
+For a `plan-only` result, report the Plan and show the planning-end handoff below. This mode never writes files or asks for execution authorization, but it must still tell the user how to keep the plan, turn it into a new implementation task, continue discussing, or cancel. Never end a `plan-only` response with the Plan alone or with a findings-only sentence.
+
+```markdown
+**结论：这份 Plan 已完成；本轮只做规划，不会修改文件。**
+
+**已完成：**
+Codex 已经写清目标、修改范围、验证方法和风险。因为当前模式是 `plan-only`，这份 Plan 不能直接获得 implementation 权限。
+
+**下一步：**
+你可以保留这份方案，也可以把它重新整理成实施任务。转成实施任务后，Codex 会重新经过 Brief 和 Route，不会直接写文件。
+
+**怎么回复：**
+`只保留方案`
+
+> 你接受当前方案并结束这次规划。Codex 会保留方案，不进入 implementation。
+
+`转成实施任务`
+
+> 你想把方案变成实施任务。Codex 会重新整理 Brief 和授权范围，不会直接修改文件，也不会把这份文字方案当成 native Plan。
+
+`继续聊聊`
+
+> 你暂时不结束规划，想继续讨论。Codex 会保留当前方案，不修改文件。
+
+`取消`
+
+> 你要取消当前任务。Codex 不会继续规划或执行。
+```
+
+Here `转成实施任务` starts a new Brief/Route authorization cycle; it does not write files or treat the current prose as native Plan.
 
 **Small** — Investigate only what is necessary. For a Bug in `implementation`, complete the focused RCA gate above before making the smallest change; for a non-Bug task, the minimal change may follow the route handoff. In `check-only` or `plan-only`, do not write. Run the project’s real targeted tests, lint, typecheck, build, or behavior checks; inspect the actual diff; then follow `AGENTS.md` for `git status` and the concise diff summary. Do not create an ExecPlan or Goal, and do not commit or publish automatically. Formal Review is normally unnecessary unless requested or the risk grows.
 
-**Medium** — Investigate first. For a Bug, the read-only investigation must complete the focused/full RCA gate and establish the root cause before Plan or any write. For `implementation`, complete the necessary read-only investigation, then invoke the host’s actual native Plan and wait for it to complete successfully before modifying any file. A hand-written outline or `update_plan` is not proof that native Plan mode was used. If the current host cannot call native Plan itself, follow `Native Plan availability and handoff` below: output the filled Plan request immediately so the user can submit it after manually entering Plan mode, and stop before any write. For `check-only`, continue only with independent read-only checks that do not require Plan; after reporting the findings, show whether the user wants `整理 brief`, `只保留结论`, or another read-only action. For `plan-only`, return the plan with a clear terminal explanation and do not ask for execution. After a completed native Plan for `implementation`, use an explicit host action such as Implement or returning to execution mode as execution authorization. If the host has not supplied such authorization, display the plan outcome and stop for `确认计划，执行`; `修改计划` regenerates the handoff and `取消` stops. Run real verification for implementation. Use native Review or native Colleagues reviewer when there is meaningful logic, behavior, multi-module, concurrency, performance, or regression risk; do not force heavyweight Review for a low-risk Medium. Review never replaces tests; fix only confirmed findings and re-review when needed. If native Review is unavailable, provide the native handoff and do not self-review under another name.
+**Medium** — Investigate first. For a Bug, the read-only investigation must complete the focused/full RCA gate and establish the root cause before Plan or any write. For `implementation`, complete the necessary read-only investigation, then invoke the host’s actual native Plan and wait for it to complete successfully before modifying any file. A hand-written outline or `update_plan` is not proof that native Plan mode was used. If the current host cannot call native Plan itself, follow `Native Plan availability and handoff` below: output the filled Plan request immediately so the user can submit it after manually entering Plan mode, and stop before any write. For `check-only`, continue only with independent read-only checks that do not require Plan; after reporting the findings, show the result handoff with `整理 brief`, `只保留结论`, `继续聊聊`, or another read-only action. For `plan-only`, return the plan and the planning-end card above; never ask for execution. After a completed native Plan for `implementation`, use an explicit host action such as Implement or returning to execution mode as execution authorization. If the host has not supplied such authorization, display the plan outcome and stop for `确认计划，执行`; `修改计划` regenerates the handoff and `取消` stops. Run real verification for implementation. Use native Review or native Colleagues reviewer when there is meaningful logic, behavior, multi-module, concurrency, performance, or regression risk; do not force heavyweight Review for a low-risk Medium. Review never replaces tests; fix only confirmed findings and re-review when needed. If native Review is unavailable, provide the native handoff and do not self-review under another name.
 
 For either Medium or Large, when native Plan is unavailable, use `Native Plan availability and handoff` below. Do not emit a bare `/plan`, and do not treat a prose outline or a user’s “我想好了” as native Plan completion.
 
@@ -223,7 +256,7 @@ If the host’s exact entry syntax is unknown, tell the user to enter Plan mode 
 
 The block above defines the field order only. In a live handoff, replace every angle-bracketed item with the actual brief and RCA facts before showing it to the user. The live handoff must explicitly say to enter Plan through the host UI and paste the filled request into the current conversation. Once the real native result is visible, consume it directly; do not request another message merely to acknowledge completion and do not ask the user to paste or upload the same result again.
 
-For `implementation`, proceed when the user has used the host’s explicit Implement action or the host has otherwise returned the task to execution mode with the Plan visible. If only the Plan result is visible and execution authorization is not observable, use the completion handoff below. For `check-only` or `plan-only`, show the result and stop without entering execution.
+For `implementation`, proceed when the user has used the host’s explicit Implement action or the host has otherwise returned the task to execution mode with the Plan visible. If only the Plan result is visible and execution authorization is not observable, use the completion handoff below. For `check-only`, show the findings handoff with its next choices. For `plan-only`, show the planning-end card with its four choices; neither mode enters execution.
 
 ## Option checkpoint
 
@@ -310,7 +343,7 @@ Plan 已经列出要改的范围、主要风险和验证方法。native Plan 是
 > 你要停止当前任务。Codex 不会执行这份 Plan，也不会修改文件。
 ```
 
-For `check-only` or `plan-only`, show the Plan/findings and stop without asking for execution. A user-run fallback is complete only when the actual native result is visible, not when the user sends a separate acknowledgement.
+For `check-only`, show the findings and its explicit next-choice card. For `plan-only`, show the planning-end card above; neither mode enters execution. A user-run fallback is complete only when the actual native result is visible, not when the user sends a separate acknowledgement.
 
 ## Truthfulness and finish
 

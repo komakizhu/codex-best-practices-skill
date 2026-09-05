@@ -14,6 +14,14 @@ Keep the system lightweight. Avoid duplicated rules, unnecessary gates, large pe
 
 The public orchestration Skills are connected stages, not isolated answer generators. A direct invocation enters the Workflow at that stage and must return a visible handoff to the next stage or an explicit terminal boundary. Every stage result names the conclusion, what Codex completed, who acts next, the exact command or host action, and what remains forbidden. This contract connects the Workflow without granting later permissions early.
 
+Once a public Skill is explicitly invoked, this Workflow remains active across reply turns. The next command is interpreted against the last visible card; the user does not need to invoke the next public Skill again. If the host cannot expose a callable Skill entry, the Workflow still renders the next stage’s card directly. Reading a `SKILL.md` file with a terminal command is repository inspection, not proof of a host-level Skill invocation.
+
+The six public Skills remain explicit-only (`allow_implicit_invocation: false`). When this Workflow calls an external Skill, it adds a temporary, invocation-scoped instruction to preserve the external Skill’s own rules, start with a conclusion, use bullets for parallel facts, write concrete subject-action-result Chinese, and return the result to the Workflow. The Workflow then adds its own stage handoff; external Skill files are never changed.
+
+本次调用外部 Skill 时使用这段临时说明：
+
+> 请保留你的专业判断、技术术语和安全边界。输出先写一句结论；有两个以上事实、风险或步骤时使用 bullet；每句话写清楚谁做什么、结果是什么。完成后把结果交还给当前 Workflow，不要替 Workflow 结束任务，也不要修改你的 Skill 文件。
+
 The default transitions are `$task-brief` → `$task-router` → investigation/RCA → Option decision → native Plan → implementation → verification → completion → optional retrospective. `$rca-analyze` joins at RCA, `$option-explorer` joins at Option, and `$repo-retrospective` is the optional terminal stage. Explicit `只分析`、`只保留结论`、`只做计划` and `取消` remain terminal boundaries for their current mode.
 
 ### Runtime source of truth
@@ -221,7 +229,23 @@ Authorization modes:
 - `check-only`
 - `plan-only`
 
-Never upgrade check-only or plan-only into implementation without user authorization.
+Never upgrade check-only or plan-only into implementation without user authorization. A `plan-only` result must show a terminal handoff with these four commands:
+
+`只保留方案`
+
+> 你接受当前方案并结束这次规划。Codex 会保留方案，不进入 implementation。
+
+`转成实施任务`
+
+> 你想把方案变成实施任务。Codex 会重新整理 Brief 和授权范围，不会直接修改文件。
+
+`继续聊聊`
+
+> 你暂时不结束规划，想继续讨论。Codex 会保留当前方案，不修改文件。
+
+`取消`
+
+> 你要取消当前任务。Codex 不会继续规划或执行。
 
 For any Bug implementation, root-cause analysis is a mandatory pre-write condition. Small Bugs use a focused RCA; systemic Bugs use full RCA with representative cases and a generalization boundary. A failing test or plausible explanation is evidence, not a confirmed root cause.
 

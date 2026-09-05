@@ -72,4 +72,10 @@ When invoked internally by `$engineering-workflow`, display the complete five-it
 
 When the user directly invokes `$task-brief` for an action-ready repository task, treat the Brief as the first stage of the full Workflow. `确认` continues to `$task-router` after this handoff; it does not authorize implementation by itself. If the user explicitly asks for a standalone Brief or uses a terminal mode such as `只整理 brief`, return the five-item brief and stop at the stated boundary.
 
+The continuation is a Workflow handoff, not a request for the user to invoke another Skill manually. After the user replies `确认`, the next response must visibly be a Route card. If the host does not provide a callable Skill entry, the current Workflow still renders the Route card using the installed routing rules; reading a `SKILL.md` file in a terminal is repository inspection, not evidence that the host performed a second Skill invocation.
+
+If this Workflow temporarily calls an external Skill while preparing the Brief, keep the external Skill’s own rules, ask it for conclusion-first subject-action-result Chinese, and return its result to this Workflow. Do not modify the external Skill; this Skill remains responsible for the Brief and its next-stage handoff.
+
+When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.
+
 Ask at most one question, and only when the missing answer would clearly change implementation direction, authorization, compatibility, data safety, or acceptance. Otherwise state the assumption briefly in `验收标准/待确认项` and let the confirmed `$task-router` or repository investigation resolve it. An explicit `$task-brief` request returns the brief without implementing the task.
