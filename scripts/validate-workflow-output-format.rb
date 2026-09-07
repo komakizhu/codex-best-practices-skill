@@ -110,30 +110,49 @@ STAGE_CONTINUITY_REQUIREMENTS = {
     'Public Skill stage entry and continuation',
     'A direct public Skill invocation',
     'stage continuation handoff',
-    'next available handoff or an explicit terminal choice'
+    'next available handoff or an explicit terminal choice',
+    '每条可见回复都要有下一步',
+    '讨论模式和侧边会话的安全边界',
+    'SIDE-HANDOFF',
+    'no-write'
   ],
   'task-brief' => [
     'first stage of the full Workflow',
     'continues to `$task-router`',
-    'standalone Brief'
+    'standalone Brief',
+    '每条回复的下一步和写入边界',
+    'SIDE-HANDOFF',
+    'no-write'
   ],
   'task-router' => [
     'Stage completion contract',
     'direct public `$task-router` entry',
     'next-stage handoff',
-    'show the result handoff with `整理 brief`'
+    'show the result handoff with `整理 brief`',
+    '每条可见回复都要交代下一步',
+    'SIDE-HANDOFF',
+    'no-write'
   ],
   'rca-analyze' => [
     'public Skill is invoked directly',
-    'explicit handoff back into the full repair Workflow'
+    'explicit handoff back into the full repair Workflow',
+    '每条可见回复都要有下一步',
+    'SIDE-HANDOFF',
+    'no-write'
   ],
   'option-explorer' => [
     'immediately show the required next-stage handoff',
-    'direct Option entry remains connected to the full Workflow'
+    'direct Option entry remains connected to the full Workflow',
+    '每条可见回复都要有下一步',
+    'SIDE-HANDOFF',
+    'no-write'
   ],
   'repo-retrospective' => [
     'optional terminal stage',
-    'terminal or write handoff'
+    'terminal or write handoff',
+    '每条可见回复都要有下一步',
+    'SIDE-HANDOFF',
+    'no-write'
   ]
 }.freeze
 
@@ -208,7 +227,12 @@ ROUTING_CASE_REQUIREMENTS = [
   '### Scenario 5 — Direct Router entry continues after Route',
   '### Scenario 6 — Direct Option entry returns to Plan',
   '### Scenario 7 — Direct Brief entry returns to Route',
-  '### Scenario 8 — Check-only result has a visible next choice'
+  '### Scenario 8 — Check-only result has a visible next choice',
+  '## Every-visible-reply and bad-case regressions',
+  '### Regression 4 — Route summary cannot omit confirmation',
+  '### Regression 5 — Discussion mode blocks in-flight writes',
+  '### Regression 6 — SIDE-HANDOFF must return to the parent card',
+  '每条活动 Workflow 回复都必须有结论、已完成、下一步执行者、口令或宿主动作'
 ].freeze
 
 HUMAN_LANGUAGE_ACCEPTANCE_REQUIREMENTS = [

@@ -13,6 +13,12 @@ This is an optional decision aid, not a replacement for native Plan, Review, or 
 
 Do not invoke it merely because a task is Large, unfamiliar, or interesting. Before spending extra tokens, ask the user whether they want native Colleagues, Best-of-N, or parallel exploration. If they decline, continue with the normal native Plan route.
 
+## 每条可见回复都要有下一步
+
+Option 的每条可见回复都必须先说当前结论，再说明 Codex 已完成的比较、下一步由谁执行、可复制口令或宿主动作，以及当前不会做什么。方案比较结束后不能只列 A/B；必须给出 `选择 A`、`选择 B`、`回到 Plan`、`继续聊聊` 或 `取消`，并用 `> ` 说明选择后的结果。
+
+用户选择 `继续聊聊` 后，Option 保持 `discussion`、`no-write` 状态。Codex 必须暂停排队中的写入，并在任何写文件前重新检查模式和授权。SIDE-HANDOFF 或外部 Skill 的比较结果只能作为事实，Option 必须在主会话重新显示交接卡，不能直接推进 Plan 或 implementation。
+
 ## Entry handoff
 
 When called internally without an already-confirmed `进入 option` handoff, stop at this card before invoking any exploration capability:

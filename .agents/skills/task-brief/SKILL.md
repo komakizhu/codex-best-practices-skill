@@ -11,6 +11,14 @@ This Skill is a snapshot step, not the place to brainstorm or diagnose an unconf
 
 When another local exploration Skill is active, do not run Task Brief in parallel. Wait for that Skill's own handoff or for the user to say `整理 brief`; then synthesize the conversation once.
 
+## 每条回复的下一步和写入边界
+
+只要当前 Workflow 仍在运行，Task Brief 的每条可见回复都要写清楚：当前结论、Codex 已完成什么、下一步由谁执行、用户要复制的口令或宿主动作，以及当前不会做什么。Brief、讨论回复和侧边结果都适用；不能只给摘要就结束。
+
+用户选择 `先聊一聊` 后，Codex 必须把当前 Brief 标记为未确认草案并立即进入 `discussion`、`no-write` 状态。Codex 要暂停或取消已经排队的写入；在用户重新确认 Brief、Route 和后续授权前，不得产生 `FileChange`。每次写文件前，Codex 都要重新检查最新模式和授权。
+
+如果收到 `SIDE-HANDOFF`，Task Brief 只能把侧边结果当作事实。Codex 必须在主会话重新整理 Brief，并显示标准的下一步交接卡；侧边结果不能直接改写 Brief、跳过确认或授予写入权限。
+
 ## Output
 
 Display exactly these five items, in this order. Use Markdown so the first line is easy to scan; keep the confirmation choices inside the fifth item instead of adding a sixth heading:
@@ -73,6 +81,8 @@ When invoked internally by `$engineering-workflow`, display the complete five-it
 When the user directly invokes `$task-brief` for an action-ready repository task, treat the Brief as the first stage of the full Workflow. `确认` continues to `$task-router` after this handoff; it does not authorize implementation by itself. If the user explicitly asks for a standalone Brief or uses a terminal mode such as `只整理 brief`, return the five-item brief and stop at the stated boundary.
 
 The continuation is a Workflow handoff, not a request for the user to invoke another Skill manually. After the user replies `确认`, the next response must visibly be a Route card. If the host does not provide a callable Skill entry, the current Workflow still renders the Route card using the installed routing rules; reading a `SKILL.md` file in a terminal is repository inspection, not evidence that the host performed a second Skill invocation.
+
+After `先聊一聊` or `继续聊聊`, every discussion response must still end with a clear choice such as `继续聊聊`, `整理 brief`, or `取消`, followed by a `> ` explanation. Discussion is not a hidden pause: Codex must tell the user what will happen next and must not write files while the discussion mode is active.
 
 If this Workflow temporarily calls an external Skill while preparing the Brief, keep the external Skill’s own rules, ask it for conclusion-first subject-action-result Chinese, and return its result to this Workflow. Do not modify the external Skill; this Skill remains responsible for the Brief and its next-stage handoff.
 

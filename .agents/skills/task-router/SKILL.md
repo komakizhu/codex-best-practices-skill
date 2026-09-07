@@ -128,6 +128,12 @@ Stop after the card. Do not invoke `$option-explorer`, native Plan, Worktree, Go
 
 Every routed stage must end with one visible handoff. The handoff names the current result, the next stage or terminal boundary, who acts next, the exact command or host action, and what remains forbidden. A read-only result is not a terminal state by itself: `check-only` and `plan-only` still show the user’s available next choice while preserving their no-write mode.
 
+## 每条可见回复都要交代下一步
+
+Route 的总结、调查进度和调查结果都属于 Workflow 的可见回复。每条回复都必须先给一句结论，再写 `已完成`、`下一步`、下一步执行者、可复制口令或宿主动作，以及当前权限边界。Route 不能只输出 bullet 总结；在等待用户继续时，必须显示独立的 `确认路由`、`修改：...`、`继续聊聊` 或 `取消` 口令，并在下一段用 `> ` 说明后果。
+
+用户回复 `继续聊聊` 后，Router 必须保持 `discussion`、`no-write` 状态。Codex 要停止尚未完成的写入动作，并在每次写文件前重新检查当前模式和授权。SIDE-HANDOFF 或外部 Skill 的结果只能作为调查事实；Router 必须在主会话重新显示标准交接卡，不能让侧边结果直接推进 Route、Plan 或 implementation。
+
 For a direct public `$task-router` entry, the Route card is the first stage handoff. After the user confirms it, the Workflow continues through investigation, RCA, Option evaluation, native Plan, implementation, verification, and completion according to the selected mode. No earlier Brief gate is inferred, but no later permission gate is skipped.
 
 If this Workflow temporarily calls an external Skill during investigation, keep that Skill’s own rules, ask it for conclusion-first subject-action-result Chinese, and return its result to this Workflow. Do not modify the external Skill; this Router owns the next-stage handoff.

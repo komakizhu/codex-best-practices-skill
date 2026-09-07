@@ -610,6 +610,47 @@ Assistant: Workflow handoff with `下一步`, a standalone command, and a `> ` e
 
 Expected result: the external Skill file is unchanged, and the Workflow adds the next-stage handoff after the external result.
 
+## Every-visible-reply and bad-case regressions
+
+这些案例专门覆盖“回复说完了，但用户不知道下一步”的真实断链。每条活动 Workflow 回复都必须有结论、已完成、下一步执行者、口令或宿主动作，以及当前不会做什么。
+
+### Regression 4 — Route summary cannot omit confirmation
+
+```text
+User: $task-router 请判断这个任务
+Assistant: Route 总结只有任务类型、范围和结论，没有 `确认路由`
+```
+
+Expected result: reject the reply. A Route summary is not complete until it includes the standalone `确认路由` command and a `> ` explanation.
+
+### Regression 5 — Discussion mode blocks in-flight writes
+
+```text
+User: $task-brief 请整理这个任务
+Assistant: Brief card
+User: 先聊一聊
+Assistant: discussion reply followed by FileChange
+```
+
+Expected result: reject the transcript. `先聊一聊` changes the Workflow to `discussion`/`no-write`; queued work must stop, and Codex must re-check mode and authorization before every write.
+
+### Regression 6 — SIDE-HANDOFF must return to the parent card
+
+```text
+User: $engineering-workflow 继续处理当前任务
+Side: SIDE-HANDOFF：侧边会话返回事实
+Assistant: 只说“加入新版 brief”，没有当前阶段、下一步或口令
+```
+
+Expected result: reject the transcript. The parent Workflow must treat side output as facts only, then show a standard handoff with `整理 brief`, `继续聊聊`, or `取消`; side output cannot change Brief or write permission by itself.
+
+### 正向验收：每条回复都带下一步
+
+- `task-brief` 收到 `确认` 后，同一回复显示完整 Route 卡和 `确认路由`。
+- 用户选择 `先聊一聊` 后，每条讨论回复都给出 `继续聊聊`、`整理 brief` 或 `取消`，并明确“不修改文件”。
+- Route、RCA、Option、Plan、完成报告和复盘结果都说明下一步由谁执行；没有下一步的纯总结必须判为失败。
+- SIDE-HANDOFF 返回主会话后，主 Workflow 重新整理事实并显示标准交接卡，不直接使用侧边按钮文字。
+
 ## Should enter RCA
 
 | User request | Expected result |

@@ -7,6 +7,12 @@ description: "Use when a completed engineering task has user approval for an opt
 
 Perform a lightweight, evidence-based review of the repository environment after completed engineering work. This is an optional, user-confirmed closeout stage. The subject is agent-friendliness, not a retelling of the task, a generic project summary, or a second code review. The main Workflow always provides the task summary; this Skill only checks for durable repository-environment improvements.
 
+## 每条可见回复都要有下一步
+
+复盘的每条可见回复都必须先说结论，再说明 Codex 已检查什么、下一步由谁执行、可复制口令或宿主动作，以及当前不会做什么。即使没有候选改进，也要明确告诉用户复盘为何结束和还能选择什么，不能只列观察结果。
+
+用户选择 `继续聊聊` 后，复盘保持 `discussion`、`no-write` 状态；Codex 必须暂停排队中的写入，并在任何写入前重新检查模式和 `确认写入` 授权。SIDE-HANDOFF 或外部 Skill 返回的内容只能作为事实，复盘必须在主会话重新显示标准交接卡，不能直接写入或结束 Workflow。
+
 ## Entry and output handoff
 
 Do not start this Skill automatically when implementation, verification, or Review finishes. The main Workflow must first show a completion card and wait for `进入复盘`; `跳过复盘` ends the task after the final summary. An explicit `$repo-retrospective` invocation is itself opt-in, but the same authorization and no-write boundaries still apply. This is the optional terminal stage of the engineering Workflow: it reports a repository-environment conclusion and does not silently start another engineering stage.

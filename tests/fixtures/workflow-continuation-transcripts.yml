@@ -9,6 +9,12 @@ cases:
         text: |
           **目标：整理修复任务。**
 
+          **已完成：**
+          Codex 已经把当前请求整理成 Brief 草案。
+
+          **下一步：**
+          你选择一个回复后，Codex 会确认 Brief、继续讨论或结束任务。
+
           **验收标准/待确认项：**
           用户可以确认这份 Brief。
 
@@ -49,6 +55,12 @@ cases:
         text: |
           **结论：Route 确认后只制定 Plan，不会修改文件。**
 
+          **已完成：**
+          Codex 已经确认当前任务使用 `plan-only` 模式。
+
+          **下一步：**
+          你确认 Route 后，Codex 会制定 Plan，不会修改文件。
+
           **怎么回复：**
           `确认路由`
 
@@ -56,6 +68,8 @@ cases:
       - actor: user
         text: "确认路由"
       - actor: assistant
+        mode: plan-only
+        write: false
         text: |
           **结论：这份 Plan 已完成；本轮只做规划，不会修改文件。**
 
@@ -94,7 +108,13 @@ cases:
           **已完成：**
           外部 Skill 保留了技术信息。
 
-          这条结果还没有结束 Workflow。
+          **下一步：**
+          Codex 会把这条事实交还给 Workflow，并等待你选择继续讨论还是进入 Route。
+
+          **怎么回复：**
+          `继续聊聊`
+
+          > 你想继续讨论外部结果。Codex 会保留这些事实，不会进入 Route 或修改文件。
       - actor: assistant
         text: |
           **结论：Workflow 已接住外部 Skill 的结果，准备继续 Route。**
@@ -110,6 +130,117 @@ cases:
 
           > 你确认继续。Codex 会进入 Route，不会因为外部 Skill 返回就直接修改文件。
 
+  - name: direct task-router Route card requires confirmation
+    expected: pass
+    assertions:
+      - route_confirmation
+    events:
+      - actor: user
+        text: "$task-router 请判断这个工程任务"
+      - actor: assistant
+        text: |
+          **结论：Route 已生成，等待你确认后开始只读调查。**
+
+          **已完成：**
+          Codex 已经判断任务类型、处理范围和当前权限。
+
+          **下一步：**
+          你确认 Route 后，Codex 会开始调查；在此之前不会修改文件。
+
+          **怎么回复：**
+          `确认路由`
+
+          > 你同意这条 Route。Codex 接下来开始只读调查，不会修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不确认这条 Route。Codex 会继续讨论，不会开始调查或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续调查或修改文件。
+
+  - name: discussion mode blocks file changes
+    expected: pass
+    assertions:
+      - discussion_no_write
+    events:
+      - actor: user
+        text: "$task-brief 请整理这个任务"
+      - actor: assistant
+        text: |
+          **目标：整理这个任务。**
+
+          **已完成：**
+          Codex 已经整理 Brief 草案。
+
+          **下一步：**
+          你可以确认 Brief，或者先继续讨论；Codex 当前不会修改文件。
+
+          **怎么回复：**
+          `先聊一聊`
+
+          > 你暂时不确认 Brief。Codex 会保留草案并继续讨论，不会修改文件。
+      - actor: user
+        text: "先聊一聊"
+      - actor: assistant
+        mode: discussion
+        write: false
+        text: |
+          **结论：我们现在继续讨论，不更新 Brief，也不修改文件。**
+
+          **已完成：**
+          Codex 已经保留当前 Brief 草案，并记录了你刚补充的想法。
+
+          **下一步：**
+          你可以继续补充，也可以让我重新整理 Brief。
+
+          **怎么回复：**
+          `继续聊聊`
+
+          > 你想继续讨论。Codex 会补充分析，不会更新 Brief 或修改文件。
+
+          `整理 brief`
+
+          > 你要重新整理任务摘要。Codex 会生成新的 Brief，然后再次请你确认；在此之前不会修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续讨论或修改文件。
+
+  - name: side handoff returns to Workflow card
+    expected: pass
+    assertions:
+      - side_handoff
+    events:
+      - actor: user
+        text: "$engineering-workflow 继续处理当前任务"
+      - actor: side
+        side_handoff: true
+        text: "SIDE-HANDOFF：侧边会话确认了 Heavy 方案的测试结果。"
+      - actor: assistant
+        text: |
+          **结论：侧边会话的结果已经收到，但它还没有改变当前 Brief 或写入权限。**
+
+          **已完成：**
+          Codex 已经把侧边会话提供的测试事实放回当前 Workflow。
+
+          **下一步：**
+          你可以把这些事实整理进 Brief，或者继续讨论；Codex 不会自动修改文件。
+
+          **怎么回复：**
+          `整理 brief`
+
+          > 你要把侧边结果纳入任务摘要。Codex 会重新整理 Brief，然后请你确认，不会直接修改文件。
+
+          `继续聊聊`
+
+          > 你想继续讨论侧边结果。Codex 会保留这些事实，不会更新 Brief 或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续处理侧边结果或修改文件。
+
   - name: old plan-only bad case is rejected
     expected: fail
     events:
@@ -120,3 +251,69 @@ cases:
           **结论：方案已经写完，本轮到此结束。**
 
           实现会把节奏器和 TextInjector 分开，随后再验证。
+
+  - name: old Route summary without confirmation is rejected
+    expected: fail
+    assertions:
+      - route_confirmation
+    events:
+      - actor: user
+        text: "$task-router 请判断这个任务"
+      - actor: assistant
+        text: |
+          **结论：Route 已判断完成。**
+
+          **已完成：**
+          Codex 已经列出路由和范围。
+
+          **下一步：**
+          Codex 会继续处理。
+
+  - name: old discussion reply with FileChange is rejected
+    expected: fail
+    assertions:
+      - discussion_no_write
+    events:
+      - actor: user
+        text: "$task-brief 请整理这个任务"
+      - actor: assistant
+        text: |
+          **目标：整理这个任务。**
+
+          **已完成：**
+          Codex 已经整理 Brief 草案。
+
+          **下一步：**
+          你可以先继续讨论，不会修改文件。
+
+          `先聊一聊`
+
+          > 你暂时不确认 Brief。Codex 会继续讨论，不会修改文件。
+      - actor: user
+        text: "先聊一聊"
+      - actor: assistant
+        mode: discussion
+        write: true
+        action: FileChange
+        text: |
+          **结论：讨论已经开始。**
+
+          **已完成：**
+          Codex 同时修改了 Rust 文件。
+
+          **下一步：**
+          Codex 会继续讨论。
+
+  - name: old side handoff without Workflow card is rejected
+    expected: fail
+    assertions:
+      - side_handoff
+    events:
+      - actor: user
+        text: "$engineering-workflow 继续处理当前任务"
+      - actor: side
+        side_handoff: true
+        text: "SIDE-HANDOFF：侧边会话返回了新的测试结论。"
+      - actor: assistant
+        text: |
+          侧边实测结果已收到：可以加入新版 brief。
