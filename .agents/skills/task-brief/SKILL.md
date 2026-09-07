@@ -13,7 +13,7 @@ When another local exploration Skill is active, do not run Task Brief in paralle
 
 ## 每条回复的下一步和写入边界
 
-只要当前 Workflow 仍在运行，Task Brief 的每条可见回复都要写清楚：当前结论、Codex 已完成什么、下一步由谁执行、用户要复制的口令或宿主动作，以及当前不会做什么。Brief、讨论回复和侧边结果都适用；不能只给摘要就结束。
+只要当前 Workflow 仍在运行，Task Brief 的每条可见回复都要写清楚：当前结论、Codex 已完成什么、下一步由谁执行、用户要复制的口令或宿主动作，以及当前不会做什么。Brief 保持下面固定的五项格式；它不重复添加公共标题，但必须在五项内容和确认说明中表达这些信息。讨论回复和侧边结果仍遵守完整交接规则，不能只给摘要就结束。
 
 用户选择 `先聊一聊` 后，Codex 必须把当前 Brief 标记为未确认草案并立即进入 `discussion`、`no-write` 状态。Codex 要暂停或取消已经排队的写入；在用户重新确认 Brief、Route 和后续授权前，不得产生 `FileChange`。每次写文件前，Codex 都要重新检查最新模式和授权。
 
@@ -38,6 +38,8 @@ Display exactly these five items, in this order. Use Markdown so the first line 
 **验收标准/待确认项：**
 可观察的完成条件，以及需要确认的关键决定。
 
+下一步由你确认这份任务摘要；你确认后，Codex 会展示 Route，但在后续授权前不会修改文件。
+
 请确认这份任务摘要。
 
 `确认`
@@ -57,7 +59,7 @@ Display exactly these five items, in this order. Use Markdown so the first line 
 > 你要停止当前任务。Codex 不会继续路由、规划或实施。
 ```
 
-Fold references into `当前上下文/证据` and open questions into `验收标准/待确认项`; do not add a sixth visible heading.
+Fold references into `当前上下文/证据` and open questions into `验收标准/待确认项`; do not add a sixth visible heading. The fifth item must state who acts next and what the current boundary is.
 
 ## 真实回复写作规则
 
@@ -82,7 +84,7 @@ When the user directly invokes `$task-brief` for an action-ready repository task
 
 The continuation is a Workflow handoff, not a request for the user to invoke another Skill manually. After the user replies `确认`, the next response must visibly be a Route card. If the host does not provide a callable Skill entry, the current Workflow still renders the Route card using the installed routing rules; reading a `SKILL.md` file in a terminal is repository inspection, not evidence that the host performed a second Skill invocation.
 
-After `先聊一聊` or `继续聊聊`, every discussion response must still end with a clear choice such as `继续聊聊`, `整理 brief`, or `取消`, followed by a `> ` explanation. Discussion is not a hidden pause: Codex must tell the user what will happen next and must not write files while the discussion mode is active.
+After `先聊一聊` or `继续聊聊`, every discussion response must still end with a clear choice such as `继续聊聊`, `整理 brief`, or `取消`, followed by a `> ` explanation. Discussion is a pause overlay, not a new authorization mode: Codex keeps the existing Brief, Route, Plan, and authorization records, blocks writes while paused, and checks whether the scope changed before resuming. Discussion is not a hidden pause: Codex must tell the user what will happen next and must not write files while the discussion mode is active.
 
 If this Workflow temporarily calls an external Skill while preparing the Brief, keep the external Skill’s own rules, ask it for conclusion-first subject-action-result Chinese, and return its result to this Workflow. Do not modify the external Skill; this Skill remains responsible for the Brief and its next-stage handoff.
 

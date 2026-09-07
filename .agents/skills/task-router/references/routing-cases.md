@@ -1,6 +1,6 @@
 # Task Router Acceptance Cases
 
-Use these as manual pressure cases for the routing rules. The expected result is a decision, not a required sentence or implementation.
+Use these as manual pressure cases for the routing rules. The expected result is a decision, not a required sentence or implementation. Full reply examples must satisfy the complete handoff contract; examples marked `正文片段（不是完整交接卡）` are only language samples and must not be used as complete replies.
 
 ## Should route
 
@@ -20,13 +20,13 @@ Use these as manual pressure cases for the routing rules. The expected result is
 | “$engineering-workflow 检查 parser 模块的测试为什么失败，不要改代码。” | Display and confirm the brief, show and confirm Small/Medium `check-only` routing, perform only read-only checks, and do not enter implementation or retrospective without a new explicit request. |
 | “$engineering-workflow 把配置存储从 JSON 迁移到 SQLite，要求兼容旧数据并提供回滚。” | Display and confirm the brief, show and confirm Large routing, investigate, ask whether to enter Option if its three conditions hold, and complete native Plan. If the host’s Implement/return-to-execution action is observable, continue with the named ExecPlan/Worktree/Goal/rollback choices; otherwise ask `确认计划，执行` once. After checks and Review, ask `进入复盘` or `跳过复盘`. |
 | “$engineering-workflow 修复一个 Large Workflow 规则 Bug；宿主没有 callable native Plan，也没有预先声明手动 Plan 入口。” | Immediately issue the filled Plan request for the user to submit through the host UI. Do not create a prose substitute, persist an ExecPlan, or write files before the native result and execution authorization are observable. |
-| “$task-router 为 Workflow 规则修复制定计划，只做计划；当前只有 `update_plan`。” | Do not treat `update_plan` as native Plan. Immediately show the filled user-run Plan request, tell the user to enter Plan through the host UI, and stop after the real Plan result because the route is `plan-only`. |
+| “$task-router 为 Workflow 规则修复制定计划，只做计划；当前只有 `update_plan`。” | Do not treat `update_plan` as native Plan. Immediately show the filled user-run Plan request, tell the user to enter Plan through the host UI, and after the real Plan result show `确认计划，执行` / `修改计划` / `继续聊聊` / `只保留方案` / `取消`; `plan-only` remains no-write until execution authorization. |
 | “$task-router 评估多窗口架构迁移，只做计划，不修改文件。” | Show Large / `plan-only` route and wait for `确认路由`; no file writes, ExecPlan persistence, Worktree, Goal, implementation, or automatic retrospective. |
 | “$engineering-workflow 把刚才讨论的设置改动落到仓库，并运行相关测试。” | Always display and confirm the five-item Task Brief, show and confirm the route, explicitly announce whether Option triggers, and use the required native stages only after their handoff confirmations. |
 | “$task-brief 把刚才讨论的架构想法整理成任务定义，不要实施。” | Display the five-item Brief; after `确认`, continue to the Route stage while preserving the no-write boundary until the required Plan and execution authorization. If the user explicitly says “只整理 brief”，stop after the Brief. |
 | “$rca-analyze 这个 Skill 为什么调不起来？先分析，不要修。” | Enter the Workflow at RCA, keep the review read-only, and after the RCA report offer `整理 brief` as the repair handoff or `只保留结论` as the terminal branch. |
 | “$task-router 评估这个 Workflow 规则问题并修复。” | Enter the Workflow at Route, show and confirm the Route handoff, then continue through investigation, Option evaluation, native Plan, implementation, verification, and completion without asking the user to rediscover the next stage. |
-| “$option-explorer 比较这两条已经确认的技术路线。” | Enter the Workflow at Option, check the three trigger conditions, and after a selected direction flow directly into native Plan or the filled manual Plan request. |
+| “$option-explorer 比较这两条已经确认的技术路线。” | Enter the Workflow at Option, check the three trigger conditions, compare evidence/trade-offs/uncertainty, recommend a direction with a reason, and ask for `采用 A` / `采用 B` / `只保留比较结果` / `继续聊聊` / `取消`; adoption flows directly into native Plan or the filled manual Plan request. |
 | “$repo-retrospective 检查刚才的任务有没有可重复的仓库摩擦。” | Run the optional terminal retrospective and show its write/record/cancel choices; do not start another engineering stage automatically. |
 | “完成这个工程任务后，检查是否有可重复的仓库环境摩擦。” | Use `$repo-retrospective`; default to no changes and persist only evidence-backed recurring improvements. |
 
@@ -73,34 +73,44 @@ Use these as manual pressure cases for the routing rules. The expected result is
 
 ### Scenario 2 — Large implementation after Option selection
 
-**Setup:** A Large JSON-to-SQLite migration has completed full RCA. Option exploration found two viable approaches: A uses an online compatibility layer and staged backfill; B uses a maintenance-window migration with rollback snapshots.
+**Setup:** A Large JSON-to-SQLite migration has completed the necessary investigation of current behavior, compatibility, data safety, and rollback. Option exploration found two viable approaches: A uses an online compatibility layer and staged backfill; B uses a maintenance-window migration with rollback snapshots.
 
 **Step 1 — Option reply:**
 
-> **结论：推荐 A，它保留旧数据兼容和可回滚性，代价是过渡期双路径复杂度。**
+> **结论：Codex 推荐 A，因为它保留旧数据兼容和可回滚性；代价是过渡期要维护双路径。**
 >
 > **候选方案：**
 > A：在线兼容层 + 分批回填 + 可回退到 JSON。
 > B：维护窗一次性迁移 + 快照回滚。
+
+> 证据显示 A 降低停机风险，B 降低实现复杂度；当前仍有迁移窗口和双写一致性方面的不确定性。
 >
 > **请回复：**
-`选择 A`
+`采用 A`
 
-> 你选择在线兼容路径。Codex 接下来会按这个方向提交 Plan，不会直接修改文件。
+> 你采用在线兼容路径。Codex 接下来会按这个方向提交 Plan，不会直接修改文件。
 
-`选择 B`
+`采用 B`
 
-> 你选择维护窗路径。Codex 接下来会按这个方向提交 Plan，不会直接修改文件。
+> 你采用维护窗路径。Codex 接下来会按这个方向提交 Plan，不会直接修改文件。
+
+`只保留比较结果`
+
+> 你只需要这次比较。Codex 会保留优劣、证据和不确定性，不进入 Plan 或修改文件。
+
+`继续聊聊`
+
+> 你暂时不采用任何方向，想继续讨论。Codex 会保留比较结果，不进入 Plan 或修改文件。
 
 `取消`
 
 > 你要停止 Option。Codex 不会选择方案，也不会进入 Plan 或修改文件。
 
-**Step 2 — User selection:** `选择 A`
+**Step 2 — User selection:** `采用 A`
 
 **Step 3 — Workflow reply:**
 
-> **结论：已选择在线兼容路径，请把下面的完整请求提交到宿主 Plan 模式。**
+> **结论：已采用在线兼容路径，请把下面的完整请求提交到宿主 Plan 模式。**
 >
 > **Plan 请求：**
 >
@@ -173,7 +183,7 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 **Setup:** The user invokes `$option-explorer` and the three Option trigger conditions hold.
 
-**Expected:** Codex compares the candidate paths, waits for `选择 A` / `选择 B` / `回到 Plan` / `继续聊聊` / `取消`, and sends a selected direction directly to native Plan or the filled manual Plan request. No second Plan-entry confirmation appears.
+**Expected:** Codex compares the candidate paths, explains evidence, trade-offs, uncertainty, and a recommendation with its reason, then waits for `采用 A` / `采用 B` / `采用其他方向` / `只保留比较结果` / `继续聊聊` / `取消`. Adoption sends the selected direction directly to native Plan or the filled manual Plan request; a preference alone does not authorize a write. No second Plan-entry confirmation appears.
 
 ### Scenario 7 — Direct Brief entry returns to Route
 
@@ -189,7 +199,7 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 ## 场景化中文验收稿（10 套真实输出样例）
 
-以下示例均采用同一风格：复杂信息用一个自然段；并列信息使用结论+要点；每个口令单独成段，与说明之间空一行，说明段以 `> ` 开头；无列表标记。
+以下示例均采用同一风格：先说结论；并列信息用要点；完整交接卡包含下一步执行者、口令或宿主动作和当前边界；每个口令单独成段，与说明之间空一行，说明段以 `> ` 开头；口令不使用列表标记。
 
 ### 场景一：生成 Brief
 
@@ -201,24 +211,24 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 **目标：停止录音后，输入框里已经出现的文字不能再被删掉。**
 
-**目前确认的情况**
+**当前上下文/证据：**
 - 腾讯 ASR 最后返回的 `final` 和 `finished` 都包含完整文字。
 - 文字是在送进目标输入框以后才被删除的。
 - 问题集中在停止录音和模拟退格这两段流程。
 
-**本次限制**
+**约束与授权：**
 - 保留现有 macOS MVP 架构。
-- 现在只确认任务范围，还不修改文件。
+- 当前只确认任务范围，Codex 还不会修改文件。
 
-**这次会处理**
+**范围/非目标：**
 - 查清停止录音时，各个异步事件的执行顺序。
 - 让文字更新和退格事件按正确顺序执行。
 - 补充能够复现误删问题的测试。
 
-**怎样算完成**
-停止录音后，最终文字保持不变；句内修正仍然正常；相关测试全部通过。
+**验收标准/待确认项：**
+停止录音后最终文字保持不变，句内修正仍然正常，相关测试全部通过；下一步由你确认这份摘要，你确认后 Codex 会展示 Route，但授权前不会修改文件。
 
-**请确认这份任务摘要**
+请确认这份任务摘要。
 
 `确认`
 
@@ -238,13 +248,15 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 ### 场景二：用户选择“先聊一聊”
 
+**用途：正文片段（不是完整交接卡）**
+
 **改前（问题）**
 
 > Brief 已冻结为暂存草案，当前进入 Exploration mode，不进入 Router、Plan 或修改文件。
 
 **改后（期望）**
 
-> 好的，我先保留这份 Brief，不进入 Route、Plan 或修改文件。你可以继续补充想法；等你说“整理 Brief”时，我再把讨论内容整理成一份新的 Brief。
+> 好的，我先保留这份 Brief，不进入 Route、Plan 或修改文件。你可以继续补充想法；等你说“整理 Brief”时，我再把讨论内容整理成一份新的 Brief。讨论是暂停状态，不会自行恢复原授权；只有你明确恢复且范围未变时，Codex 才会沿用原路线。
 
 ### 场景三：Route 判断
 
@@ -256,6 +268,8 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 **结论：先查清停止录音和退格事件的执行顺序，再制定 Plan。**
 
+**已完成：**
+
 这个问题涉及三个互相影响的部分：
 - 停止录音时怎样结束 ASR 会话。
 - 最后一段文字怎样写入输入框。
@@ -263,7 +277,15 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 直接修改其中一处可能制造新的误删问题，所以这项任务按 Medium 处理。
 
+**下一步：**
+
 你确认 Route 后，Codex 会先做只读调查，不会马上修改文件。
+
+**需要你确认：**
+
+请确认是否按这条 Route 继续；确认后 Codex 才会开始调查。
+
+**怎么回复：**
 
 `确认路由`
 
@@ -282,6 +304,8 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 > 你要停止当前任务。Codex 不会开始调查或修改文件。
 
 ### 场景四：RCA 未确认根因
+
+**用途：正文片段（不是完整交接卡）**
 
 **改前（问题）**
 
@@ -304,6 +328,8 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 ### 场景五：RCA 已确认根因
 
+**用途：正文片段（不是完整交接卡）**
+
 **改前（问题）**
 
 > RCA 已完成；根因、证据和影响范围已记录。主要风险集中在停止竞态以及异步退格事件。
@@ -324,6 +350,8 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 - 文字写入和退格事件必须按同一顺序执行。
 
 ### 场景六：Option 不触发
+
+**用途：正文片段（不是完整交接卡）**
 
 **改前（问题）**
 
@@ -374,26 +402,42 @@ These cases verify that a direct public Skill invocation starts the full Workflo
 
 **改后（期望）**
 
-**结论：请先在宿主中手动打开 Plan；我已经把可以直接粘贴的 Plan prompt 写好。**
+**结论：请先在宿主中手动打开 Plan；Codex 已准备好完整的可复制请求。**
 
-请在宿主 UI 中打开 Plan，把下面的内容粘贴到当前对话。native Plan 结果出现前，Codex 不会修改文件。
+**已完成：**
+Codex 已经把目标、现状证据、范围、非目标、约束和验收方式填入 Plan 请求。当前没有可调用的 native Plan，Codex 不会把普通文字大纲当作 Plan 结果。
 
+**下一步：**
+请在宿主 UI 中打开 Plan，并把内层请求完整粘贴到当前对话；真实 native Plan 结果出现前，Codex 不会修改文件。
+
+**需要你确认：**
+请通过宿主 UI 进入 Plan 并提交下面的请求；这一步只产生规划结果，不是执行授权。
+
+**Plan 请求：**
+
+````markdown
 ```text
 请为“停止录音后文字被误删”制定实施 Plan。
 
-已经确认：
-- ASR 返回的最终文字完整。
-- 停止流程和延迟退格会交错执行。
-- 修复需要统一输入事件顺序，并让停止流程等待队列结束。
+**任务目标：**
+修复停止录音后文字被延迟退格删掉的问题。
 
-Plan 需要说明：
-- 修改哪些状态和调用顺序。
-- 怎样保留句内修正能力。
-- 先补哪些回归测试。
-- 怎样验证停止录音、连续修正和快速启停。
+**已确认的 RCA/证据：**
+ASR 返回的最终文字完整；停止流程和延迟退格会交错执行；修复需要统一输入事件顺序，并让停止流程等待队列结束。
 
-只制定 Plan，不修改文件，不执行实现，不提交。
+**范围：**
+说明状态和调用顺序、句内修正兼容性、回归测试以及停止录音/连续修正/快速启停的验证。
+
+**非目标：**
+不更换现有架构，不修改无关输入行为，不提交或发布。
+
+**约束：**
+只制定 Plan，不修改文件、不执行实现、不提交。
+
+**验收与验证：**
+Plan 必须列出回归测试、实施里程碑、风险、回滚和最终验证方式。
 ```
+````
 
 ### 场景九：Plan 已完成但尚未授权执行
 
@@ -405,12 +449,24 @@ Plan 需要说明：
 
 **结论：Plan 已经完成，但 Codex 还没有修改文件。**
 
+**已完成：**
+
 这份 Plan 已确定：
 - 先补三个能够复现误删问题的测试。
 - 再统一文字写入和退格事件的执行顺序。
 - 最后验证停止录音、句内修正和快速启停。
 
 当前任务不需要 Worktree、Goal、数据迁移或回滚方案。
+
+**下一步：**
+
+你决定是否让 Codex复用这份 Plan 进入 implementation；确认前 Codex 不会修改文件。
+
+**需要你确认：**
+
+请在下面五个选项中选择一个。
+
+**怎么回复：**
 
 `确认计划，执行`
 
@@ -423,6 +479,10 @@ Plan 需要说明：
 `继续聊聊`
 
 > 你暂时不执行这份 Plan，想继续讨论。Codex 会保留 Plan 结果，回到讨论，不会修改文件。
+
+`只保留方案`
+
+> 你只需要当前 Plan。Codex 会保留方案并结束规划，不会修改文件。
 
 `取消`
 
@@ -438,6 +498,8 @@ Plan 需要说明：
 
 **结论：修复已经完成。停止录音后，输入框里的最终文字不会再被延迟退格删掉。**
 
+**已完成：**
+
 这次修改了两个地方：
 - 统一文字写入和退格事件在同一执行顺序。
 - 停止录音会等待已排队的输入事件结束，再清理会话状态。
@@ -449,6 +511,16 @@ Plan 需要说明：
 - Review 没有发现新的阻塞问题。
 
 当前工作区仅有本次相关修改，没有提交或发布。
+
+**下一步：**
+
+Codex 已经完成实现和验证；你现在只需决定是否进入可选复盘。
+
+**需要你确认：**
+
+请决定进入复盘、跳过复盘、继续讨论或结束当前 Workflow。
+
+**怎么回复：**
 
 `进入复盘`
 
@@ -595,10 +667,10 @@ Expected result: the second Assistant reply is a Route card with `已完成` and
 User: $task-router 只制定方案，不修改文件
 Assistant: Route card
 User: 确认路由
-Assistant: Plan result followed by `只保留方案`, `转成实施任务`, `继续聊聊`, and `取消`
+Assistant: Native Plan result followed by `确认计划，执行`, `修改计划`, `继续聊聊`, `只保留方案`, and `取消`
 ```
 
-Expected result: the plan-only mode remains no-write. `转成实施任务` starts a new Brief/Route authorization cycle; no command asks the user to reply “Plan 已完成”.
+Expected result: the plan-only mode remains no-write until explicit execution authorization. The card offers `确认计划，执行`, `修改计划`, `继续聊聊`, `只保留方案`, and `取消`; no command asks the user to reply “Plan 已完成”.
 
 ### Regression 3 — External Skill returns control to Workflow
 
@@ -707,7 +779,7 @@ These assertions apply to route, brief, RCA, Option, Plan, and completion/retros
 - “检查” does not become “修复”; a failing test is evidence, not authorization.
 - A symptom-only Bug report does not become action-ready: it enters read-only `$rca-analyze`. An explicit Bug-fix request may enter Task Brief/Router, but no Bug fix is written until the root cause is established.
 - An explicit request to check, diagnose, investigate, review, or explain a failure without changing files is action-ready `check-only`: it enters Task Brief/Router first, and may use RCA during its read-only investigation.
-- “先规划”“只分析” selects `plan-only`; “不要修改文件” is a no-write boundary but does not turn a concrete check into `plan-only`, even after `$task-router` is explicit.
+- “先规划”“只做计划” selects `plan-only`; “只分析” selects `check-only`; “不要修改文件” is a no-write boundary but does not turn a concrete check into `plan-only`, even after `$task-router` is explicit.
 - Every explicit `$engineering-workflow` invocation first applies the intent gate. Action-ready work displays the five-item Task Brief, while exploratory work displays the Exploration handoff; neither enters Router, Plan, or writes before the relevant subsequent confirmation.
 - The intent gate runs before the Brief: a vague idea or `先聊一聊` enters Exploration, where the agent does not create or live-update a five-item brief. `进入头脑风暴`, `继续讨论`, `整理 brief`, and `取消` are explicit next-step replies.
 - During Exploration, each substantive response must contribute new reasoning (hypothesis, trade-off, risk, example, or one focused question); repeating the user's sentence as a revised brief is a failure.
@@ -719,7 +791,7 @@ These assertions apply to route, brief, RCA, Option, Plan, and completion/retros
 - A Skill with `disable-model-invocation: true`, such as `带文档拷问`, is user-only and cannot be auto-invoked by `$engineering-workflow`; offer the exact user invocation or a model-invocable alternative.
 - A user-only Skill handoff stays generic in normal output, gives a clear user entry and model-invocable fallback, and offers the exits (`继续普通讨论` / `取消`); it does not silently substitute or auto-run the disabled wrapper.
 - Normal user-facing callouts use a public allowlist: `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`. Other local Skills are described as capabilities such as `结构化探索` or `逐项澄清`; no unsupported `hidden` metadata field is invented, and host-rendered Skill chips are not misrepresented as hidden.
-- `$rca-analyze` is the read-only Bug-review stage. Its result must show the next handoff (`整理 brief`, `只保留结论`, or another read-only action) and must not silently enter implementation.
+- `$rca-analyze` is the read-only Bug-review stage. A direct entry shows `整理 brief`, `只保留结论`, or another read-only action; an RCA entered from a confirmed Bug-fix Route returns to that Route without repeating an unchanged Brief. It must not silently enter implementation.
 - Do not silently chain internal discussion helpers. Public orchestration Skills are connected Workflow stages: after one returns, apply its stage handoff and continue when the user selects the provided command.
 - A direct/urgent phrase in the initial Workflow message cannot serve as pre-confirmation. After the Brief is displayed, “确认”“按这个做” or “直接修” may confirm it, while preserving all route stages.
 - The brief’s fifth item ends with a concrete reply contract: `确认` continues to Router, `修改：...` regenerates the full brief, `先聊一聊` freezes the snapshot and enters Exploration, and `取消` stops.
@@ -727,8 +799,8 @@ These assertions apply to route, brief, RCA, Option, Plan, and completion/retros
 - After an explicit `$engineering-workflow` invocation, “直接修”“马上做”“不要再问” or “跳过计划” cannot implicitly bypass a required stage; only an explicit exit or cancellation of the Workflow can end it early.
 - Every Router result includes a route handoff and waits for `确认路由`; it does not silently enter Option, Plan, or implementation.
 - After read-only investigation, the agent explicitly reports whether the three Option conditions hold. If they hold, `进入 option` is required; `跳过 option` continues to the next-stage handoff.
-- Option exploration ends with a selection handoff (`选择 A/B`, `回到 Plan`, or `取消`) and never authorizes writes by itself.
-- A Small implementation may proceed directly only after route confirmation. A Medium implementation must complete native Plan after read-only investigation and before any write; a Large implementation follows the existing native Plan and milestone requirements. After native Plan, an explicit host Implement/return-to-execution action authorizes implementation; ask `确认计划，执行` only when that host authorization is not observable. Worktree, Goal, ExecPlan, migration, and rollback choices remain visible. Routine work after authorization need not pause, but consequential product, architecture, API, compatibility, data-loss, security, irreversible/costly choice, or explicit wait still pauses.
+- Option exploration ends with evidence, trade-offs, uncertainty, a recommendation with its reason, and a selection handoff (`采用 A/B`, `采用其他方向`, `只保留比较结果`, `继续聊聊`, or `取消`); it never authorizes writes by itself.
+- A Small non-Bug implementation may proceed directly only after route confirmation. A Bug repair of any size must confirm its root cause before writing. A Medium/Large implementation, or any task where the user explicitly requests planning, must complete native Plan after the necessary read-only investigation and before any write; a Large task also follows the existing milestone, validation, and native Review requirements. After native Plan, an explicit host Implement/return-to-execution action or `确认计划，执行` authorizes implementation; the plan-only period remains no-write until that choice. Worktree, Goal, ExecPlan, migration, and rollback choices remain visible. Routine work after authorization need not pause, but consequential product, architecture, API, compatibility, data-loss, security, irreversible/costly choice, or explicit wait still pauses.
 - A Small Bug implementation still requires focused RCA before the first write. A systemic/Large Bug requires representative failures, the shared mechanism, a generalization boundary, and adjacent regression checks before native Plan or implementation.
 - A native-looking outline, a custom diff review, an ordinary branch, or an open-ended “keep going” prompt is not respectively native Plan, native Review, Worktree, or Goal.
 - Review is additional evidence; it never substitutes for real tests.

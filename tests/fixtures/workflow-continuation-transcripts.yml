@@ -9,22 +9,35 @@ cases:
         text: |
           **目标：整理修复任务。**
 
-          **已完成：**
-          Codex 已经把当前请求整理成 Brief 草案。
+          **当前上下文/证据：**
+          Codex 已经把当前请求、现有证据和仓库范围整理成 Brief 草案。
 
-          **下一步：**
-          你选择一个回复后，Codex 会确认 Brief、继续讨论或结束任务。
+          **约束与授权：**
+          当前只等待 Brief 确认；Codex 不会修改文件，也不会因整理 Brief 获得实施权限。
+
+          **范围/非目标：**
+          只处理当前修复任务的定义，不在 Brief 阶段调用 Route、Plan 或实施。
 
           **验收标准/待确认项：**
-          用户可以确认这份 Brief。
+          用户可以确认这份 Brief；下一步由你确认摘要，你确认后 Codex 会展示 Route，但后续授权前不会修改文件。
+
+          请确认这份任务摘要。
 
           `确认`
 
           > 你同意这份任务摘要。Codex 接下来会判断 Route，不会修改文件。
 
+          `修改：请把……改成……`
+
+          > 你不同意当前摘要。Codex 会按你的说明重新整理 Brief，不会修改文件。
+
           `先聊一聊`
 
-          > 你暂时不确认这份任务摘要。Codex 会继续讨论，不会修改文件。
+          > 你暂时不确认这份任务摘要。Codex 会保留未确认草案并继续讨论，不会修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续路由、规划或实施。
       - actor: user
         text: "确认"
       - actor: assistant
@@ -46,7 +59,7 @@ cases:
 
           > 你暂时不确认 Route。Codex 会继续讨论，不会调查或修改文件。
 
-  - name: plan-only result has a terminal handoff
+  - name: plan-only result has an execution handoff
     expected: pass
     events:
       - actor: user
@@ -69,6 +82,7 @@ cases:
         text: "确认路由"
       - actor: assistant
         mode: plan-only
+        native_plan: true
         write: false
         text: |
           **结论：这份 Plan 已完成；本轮只做规划，不会修改文件。**
@@ -77,20 +91,24 @@ cases:
           Codex 已经写清方案和验证方法。
 
           **下一步：**
-          你可以保留方案，或者把它重新整理成实施任务。
+          你可以确认是否实施，也可以修改、讨论或只保留方案；确认执行前，Codex 不会修改文件。
 
           **怎么回复：**
-          `只保留方案`
+          `确认计划，执行`
 
-          > 你接受当前方案并结束这次规划。Codex 会保留方案，不进入 implementation。
+          > 你接受这份 Plan 并授权 Codex 实施。Codex 会复用这份 Plan 修改文件并运行验证。
 
-          `转成实施任务`
+          `修改计划`
 
-          > 你想把方案变成实施任务。Codex 会重新整理 Brief 和授权范围，不会直接修改文件。
+          > 你要调整这份 Plan。Codex 会重新制定 native Plan，确认执行前不会修改文件。
 
           `继续聊聊`
 
-          > 你暂时不结束规划，想继续讨论。Codex 会保留当前方案，不修改文件。
+          > 你暂时不执行这份 Plan，想继续讨论。Codex 会保留 Plan，不会修改文件。
+
+          `只保留方案`
+
+          > 你只需要当前方案。Codex 会保留 Plan 并结束规划，不进入 implementation。
 
           `取消`
 
@@ -171,16 +189,35 @@ cases:
         text: |
           **目标：整理这个任务。**
 
-          **已完成：**
-          Codex 已经整理 Brief 草案。
+          **当前上下文/证据：**
+          Codex 已经整理当前请求和已有事实，形成 Brief 草案。
 
-          **下一步：**
-          你可以确认 Brief，或者先继续讨论；Codex 当前不会修改文件。
+          **约束与授权：**
+          当前只等待 Brief 确认；Codex 不会修改文件。
 
-          **怎么回复：**
+          **范围/非目标：**
+          只整理任务定义，不进入 Route、Plan 或实施。
+
+          **验收标准/待确认项：**
+          下一步由你确认摘要；你确认后 Codex 会展示 Route，但授权前不会修改文件。
+
+          请确认这份任务摘要。
+
+          `确认`
+
+          > 你同意这份任务摘要。Codex 接下来会展示 Route，不会修改文件。
+
+          `修改：请把……改成……`
+
+          > 你要修改摘要。Codex 会重新整理 Brief，不会修改文件。
+
           `先聊一聊`
 
-          > 你暂时不确认 Brief。Codex 会保留草案并继续讨论，不会修改文件。
+          > 你暂时不确认这份任务摘要。Codex 会保留草案并继续讨论，不会修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续讨论或修改文件。
       - actor: user
         text: "先聊一聊"
       - actor: assistant
@@ -243,6 +280,8 @@ cases:
 
   - name: old plan-only bad case is rejected
     expected: fail
+    expected_errors:
+      - plan_only_missing_execution_handoff
     events:
       - actor: user
         text: "$task-router 只制定方案"
@@ -254,6 +293,8 @@ cases:
 
   - name: old Route summary without confirmation is rejected
     expected: fail
+    expected_errors:
+      - route_confirmation_missing
     assertions:
       - route_confirmation
     events:
@@ -271,6 +312,8 @@ cases:
 
   - name: old discussion reply with FileChange is rejected
     expected: fail
+    expected_errors:
+      - write_during_discussion
     assertions:
       - discussion_no_write
     events:
@@ -306,6 +349,8 @@ cases:
 
   - name: old side handoff without Workflow card is rejected
     expected: fail
+    expected_errors:
+      - side_handoff_missing_card
     assertions:
       - side_handoff
     events:

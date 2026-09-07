@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-ROOT = File.expand_path('..', __dir__)
+require 'yaml'
+
+OUTPUT_ROOT = File.expand_path('..', __dir__)
 
 TARGETS = %w[
   engineering-workflow
@@ -166,12 +168,13 @@ CONTINUATION_COMMAND_REQUIREMENTS = {
 }.freeze
 
 PLAN_ONLY_HANDOFF_REQUIREMENTS = [
-  '`只保留方案`',
-  '`转成实施任务`',
+  '`确认计划，执行`',
+  '`修改计划`',
   '`继续聊聊`',
+  '`只保留方案`',
   '`取消`',
-  '转成实施任务` starts a new Brief/Route authorization cycle',
-  'For `plan-only`, show the planning-end card'
+  'plan-only',
+  '所有 Plan 完成后都要询问是否实施'
 ].freeze
 
 EXTERNAL_SKILL_HANDOFF_REQUIREMENTS = [
@@ -202,7 +205,7 @@ STALE_CONTINUITY_RULES = {
     'reports findings and stops',
     'independent lower-level entry and does not require the Workflow’s Brief gate',
     'Never auto-chain multiple local Skills',
-    'For a `plan-only` result, report the Plan and state that the task ends at planning; do not ask for an execution confirmation'
+    'For a `plan-only` result, report the Plan and show the execution handoff; do not write before explicit execution authorization'
   ],
   '.agents/skills/rca-analyze/SKILL.md' => [
     'Do not silently chain `$task-brief`, `$task-router`'
@@ -303,34 +306,53 @@ MANUAL_PLAN_SCENARIO_THREE_REQUIREMENTS = [
 ].freeze
 
 def relative_path(path)
-  path.sub("#{ROOT}/", '')
+  path.sub("#{OUTPUT_ROOT}/", '')
 end
 
 def fenced_blocks(path)
   blocks = []
-  current = nil
+  stack = []
 
   File.readlines(path).each_with_index do |raw_line, index|
     line = raw_line.chomp
+    match = line.match(/\A(`{3,})([A-Za-z0-9_-]*)\s*\z/)
 
-    if current
-      if line.match?(/\A```\s*\z/)
-        current[:end_line] = index + 1
-        blocks << current
-        current = nil
-      else
-        current[:lines] << [index + 1, line]
-      end
-    elsif line =~ /\A```([A-Za-z0-9_-]*)\s*\z/
-      current = {
-        language: Regexp.last_match(1),
+    if match && stack.empty?
+      stack << {
+        language: match[2],
+        fence_length: match[1].length,
         start_line: index + 1,
         lines: []
       }
+      next
     end
+
+    if match && !stack.empty?
+      current = stack.last
+      if match[1].length >= current[:fence_length]
+        if stack.length == 1
+          current[:end_line] = index + 1
+          blocks << stack.pop
+        else
+          stack[0...-1].each { |block| block[:lines] << [index + 1, line] }
+          stack.pop
+        end
+      else
+        stack.each { |block| block[:lines] << [index + 1, line] }
+        stack << {
+          language: match[2],
+          fence_length: match[1].length,
+          start_line: index + 1,
+          lines: []
+        }
+      end
+      next
+    end
+
+    stack.each { |block| block[:lines] << [index + 1, line] } unless stack.empty?
   end
 
-  blocks << { unclosed: true, start_line: current[:start_line] } if current
+  blocks << stack.first.merge(unclosed: true) unless stack.empty?
   blocks
 end
 
@@ -339,7 +361,7 @@ def add_error(errors, path, line, message)
 end
 
 def response_block?(line)
-  line.match?(/\*\*(?:怎么回复|请确认|请回复|切换)\*\*/)
+  line.match?(/\*\*(?:怎么回复|请确认|请回复|切换)：\*\*/)
 end
 
 def command_line?(line)
@@ -347,36 +369,36 @@ def command_line?(line)
 end
 
 def validate_reply_commands(errors, path, lines)
-  if lines.all? { |_, line| !response_block?(line) }
+  response_index = lines.index { |_, line| response_block?(line) }
+  command_index = lines.index { |_, line| command_line?(line) }
+  if response_index.nil? && command_index.nil?
     return
   end
 
-  lines.each do |line_number, line|
+  start_index = [response_index, command_index].compact.min
+  command_region = lines[start_index..]
+  command_region.each do |line_number, line|
     stripped = line.lstrip
     next if stripped.empty?
 
-    if stripped.start_with?('- ')
+    if stripped.match?(/\A-\s+`[^`]+`\s*\z/)
       add_error(errors, path, line_number, '回复命令不能用 `-` 列表符开头')
-    elsif stripped.start_with?('* ')
+    elsif stripped.match?(/\A\*\s+`[^`]+`\s*\z/)
       add_error(errors, path, line_number, '回复命令不能用 `*` 列表符开头')
-    elsif stripped.match?(/\A\d+\.\s*/)
+    elsif stripped.match?(/\A\d+\.\s+`[^`]+`\s*\z/)
       add_error(errors, path, line_number, '回复命令不能用数字序号开头')
     end
   end
 
-  command_lines = lines.each_with_index.select do |(_, line), _|
-    command_line?(line)
-  end
+  command_lines = command_region.select { |_, line| command_line?(line) }
 
   if command_lines.empty?
-    add_error(errors, path, lines.first[0], '回复/切换卡片必须包含独占一段的口令行')
+    add_error(errors, path, command_region.first[0], '回复/切换卡片必须包含独占一段的口令行')
     return
   end
 
-  indices = lines.map(&:first)
-
   command_lines.each do |line_number, line|
-    next_index = indices.index(line_number)
+    next_index = lines.index { |number, _| number == line_number }
     if next_index.nil?
       next
     end
@@ -481,13 +503,16 @@ def validate_block(errors, path, block)
     end
   end
 
-  validate_reply_commands(errors, path, lines) if lines.any? { |_, line| line.match?(/怎么回复|请确认|请回复|切换/) }
+  if lines.any? { |_, line| response_block?(line) } || lines.any? { |_, line| command_line?(line) }
+    validate_reply_commands(errors, path, lines)
+  end
 end
 
-errors = []
+def run_output_format_validation
+  errors = []
 
 TARGETS.each do |skill|
-  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  path = File.join(OUTPUT_ROOT, '.agents', 'skills', skill, 'SKILL.md')
   unless File.file?(path)
     add_error(errors, path, 1, '目标 Skill 文件不存在')
     next
@@ -518,7 +543,7 @@ TARGETS.each do |skill|
 end
 
 EXTERNAL_WRAPPER_REQUIREMENTS.each do |relative, tokens|
-  path = File.join(ROOT, relative)
+  path = File.join(OUTPUT_ROOT, relative)
   content = File.read(path)
   missing = tokens.reject { |token| content.include?(token) }
   next if missing.empty?
@@ -527,7 +552,7 @@ EXTERNAL_WRAPPER_REQUIREMENTS.each do |relative, tokens|
 end
 
 SEMANTIC_REQUIREMENTS.each do |skill, requirements|
-  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  path = File.join(OUTPUT_ROOT, '.agents', 'skills', skill, 'SKILL.md')
   content = File.read(path)
 
   requirements.each do |label, tokens|
@@ -539,7 +564,7 @@ SEMANTIC_REQUIREMENTS.each do |skill, requirements|
 end
 
 STAGE_CONTINUITY_REQUIREMENTS.each do |skill, tokens|
-  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  path = File.join(OUTPUT_ROOT, '.agents', 'skills', skill, 'SKILL.md')
   content = File.read(path)
   missing = tokens.reject { |token| content.include?(token) }
   next if missing.empty?
@@ -548,14 +573,14 @@ STAGE_CONTINUITY_REQUIREMENTS.each do |skill, tokens|
 end
 
 CONTINUATION_COMMAND_REQUIREMENTS.each do |skill, command|
-  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  path = File.join(OUTPUT_ROOT, '.agents', 'skills', skill, 'SKILL.md')
   content = File.read(path)
   next if content.include?(command)
 
   add_error(errors, path, 1, "阶段等待卡缺少固定口令：#{command}")
 end
 
-task_router_path = File.join(ROOT, '.agents', 'skills', 'task-router', 'SKILL.md')
+task_router_path = File.join(OUTPUT_ROOT, '.agents', 'skills', 'task-router', 'SKILL.md')
 task_router_content = File.read(task_router_path)
 missing_plan_only = PLAN_ONLY_HANDOFF_REQUIREMENTS.reject { |token| task_router_content.include?(token) }
 unless missing_plan_only.empty?
@@ -563,7 +588,7 @@ unless missing_plan_only.empty?
 end
 
 TARGETS.each do |skill|
-  path = File.join(ROOT, '.agents', 'skills', skill, 'SKILL.md')
+  path = File.join(OUTPUT_ROOT, '.agents', 'skills', skill, 'SKILL.md')
   content = File.read(path)
   missing_external = EXTERNAL_SKILL_HANDOFF_REQUIREMENTS.reject { |token| content.include?(token) }
   next if missing_external.empty?
@@ -572,7 +597,7 @@ TARGETS.each do |skill|
 end
 
 STALE_CONTINUITY_RULES.each do |relative, tokens|
-  path = File.join(ROOT, relative)
+  path = File.join(OUTPUT_ROOT, relative)
   content = File.read(path)
   stale = tokens.select { |token| content.include?(token) }
   next if stale.empty?
@@ -580,7 +605,24 @@ STALE_CONTINUITY_RULES.each do |relative, tokens|
   add_error(errors, path, 1, "仍包含过时的阶段断链规则：#{stale.join('、')}")
 end
 
-routing_cases_path = File.join(ROOT, '.agents', 'skills', 'task-router', 'references', 'routing-cases.md')
+agent_config_targets = TARGETS.map { |skill| ".agents/skills/#{skill}/agents/openai.yaml" }
+
+agent_config_targets.each do |relative|
+  path = File.join(OUTPUT_ROOT, relative)
+  begin
+    config = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false)
+    interface = config.is_a?(Hash) ? config['interface'] : nil
+    display_name = interface.is_a?(Hash) ? interface['display_name'] : nil
+    prompt = interface.is_a?(Hash) ? interface['default_prompt'] : nil
+    unless display_name.is_a?(String) && !display_name.strip.empty? && prompt.is_a?(String) && !prompt.strip.empty?
+      add_error(errors, path, 1, '调用配置必须包含非空 display_name 和 default_prompt')
+    end
+  rescue Psych::Exception => error
+    add_error(errors, path, 1, "调用配置 YAML 无法解析：#{error.message.lines.first.strip}")
+  end
+end
+
+routing_cases_path = File.join(OUTPUT_ROOT, '.agents', 'skills', 'task-router', 'references', 'routing-cases.md')
 routing_cases = File.read(routing_cases_path)
 missing_routing_cases = ROUTING_CASE_REQUIREMENTS.reject { |token| routing_cases.include?(token) }
 unless missing_routing_cases.empty?
@@ -595,7 +637,7 @@ unless missing_human_language_cases.empty?
 end
 
 PLAN_BEHAVIOR_SKILL_TARGETS.each do |relative|
-  path = File.join(ROOT, relative)
+  path = File.join(OUTPUT_ROOT, relative)
   next unless File.read(path).include?(OBSOLETE_PLAN_COMPLETION_REPLY)
 
   add_error(errors, path, 1, '仍包含无效的 Plan 文字完成回执')
@@ -611,7 +653,7 @@ end
 
 plan_entry_targets = PLAN_BEHAVIOR_SKILL_TARGETS
 plan_entry_targets.each do |relative|
-  path = File.join(ROOT, relative)
+  path = File.join(OUTPUT_ROOT, relative)
   next unless File.read(path).include?(OBSOLETE_PLAN_ENTRY_CONFIRMATION)
 
   add_error(errors, path, 1, '仍包含选择 Option 后的冗余 Plan 入口确认')
@@ -619,7 +661,7 @@ end
 
 
 PLAN_BEHAVIOR_SKILL_TARGETS.each do |relative|
-  path = File.join(ROOT, relative)
+  path = File.join(OUTPUT_ROOT, relative)
   next unless File.read(path).include?(OBSOLETE_OPTION_CONTINUE_REPLY)
 
   add_error(errors, path, 1, '仍包含 Option 不触发后的冗余继续确认')
@@ -635,7 +677,7 @@ end
 
 
 (PLAN_BEHAVIOR_SKILL_TARGETS + PLAN_BEHAVIOR_DOC_TARGETS).uniq.each do |relative|
-  path = File.join(ROOT, relative)
+  path = File.join(OUTPUT_ROOT, relative)
   content = File.read(path)
   obsolete = OBSOLETE_UNCONDITIONAL_EXECUTION_GATES.select { |token| content.include?(token) }
   next if obsolete.empty?
@@ -651,11 +693,17 @@ unless missing_scenario_three.empty?
   add_error(errors, routing_cases_path, 1, "真实验收场景 3 缺少：#{missing_scenario_three.join('、')}")
 end
 
-if errors.empty?
-  puts "PASS workflow output format: #{TARGETS.length} Skills checked"
-  exit 0
+  errors
 end
 
-puts "FAIL workflow output format: #{errors.length} issue(s)"
-puts errors
-exit 1
+if __FILE__ == $PROGRAM_NAME
+  errors = run_output_format_validation
+  if errors.empty?
+    puts "PASS workflow output format: #{TARGETS.length} Skills checked"
+    exit 0
+  end
+
+  puts "FAIL workflow output format: #{errors.length} issue(s)"
+  puts errors
+  exit 1
+end

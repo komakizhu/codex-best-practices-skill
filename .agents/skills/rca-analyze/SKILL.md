@@ -160,7 +160,9 @@ Codex 已经把现象、复现证据、调用链、根因和影响范围整理�
 > 你要停止当前 RCA。Codex 不会继续调查，也不会修改文件。
 ```
 
-If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. If this Skill was entered as a confirmed bug-fix route’s RCA prerequisite, return the findings to `$task-router`; the route still requires its own native Plan and execution handoff before any write. If the user invoked this Skill directly, `整理 brief` is the explicit handoff back into the full repair Workflow; `只保留结论` remains the terminal check-only branch.
+If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. Return according to the entry source: an RCA entered from a confirmed Bug-fix Route returns the findings to `$task-router` and continues that Route without asking for the unchanged Brief again; Small Bug routes can resume their focused implementation path after root-cause confirmation, while Medium/Large Bug routes continue into native Plan. A direct `$rca-analyze` entry uses the card above, where `整理 brief` is the explicit handoff back into the full repair Workflow. In both cases, `只保留结论` ends the analysis and no result grants write permission by itself.
+
+The return card must preserve the original route, confirmed RCA state, and authorization records. If the RCA changes the scope, risk, task size, or required capability, reopen only that affected Route or Brief decision before continuing; do not restart unchanged gates. A `继续聊聊` choice pauses the current route in `discussion`/`no-write`; discussion or a `SIDE-HANDOFF` cannot resume implementation without an explicit later authorization.
 
 For a direct `$rca-analyze` entry, treat the card above as a live Workflow handoff. After `整理 brief`, render the five-item Brief in the next response; do not ask the user to invoke `$task-brief` again. After `只保留结论`, end the RCA explicitly. If an external Skill helped collect evidence, give it only a temporary output instruction and let this Skill add the final handoff.
 
