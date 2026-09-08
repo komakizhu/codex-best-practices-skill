@@ -130,7 +130,7 @@ Every routed stage must end with one visible handoff. The handoff names the curr
 
 ## 每条可见回复都要交代下一步
 
-Route 的总结、调查进度和调查结果都属于 Workflow 的可见回复。每条回复都必须先给一句结论，再写 `已完成`、`下一步`、下一步执行者、可复制口令或宿主动作，以及当前权限边界。Route 不能只输出 bullet 总结；在等待用户继续时，必须显示独立的 `确认路由`、`修改：...`、`继续聊聊` 或 `取消` 口令，并在下一段用 `> ` 说明后果。
+Route 的总结、调查进度和调查结果都属于 Workflow 的可见回复。每条回复都必须先给一句结论，再写 `已完成`、`下一步`、下一步执行者和当前权限边界。等待用户选择时，交接卡必须显示 3～4 个当前场景真正需要的不同选项；每个口令独立成段并在下一段用 `> ` 说明后果。Codex 正在继续的进度回复要写明正在执行的动作，不要求用户回复；受阻时说明阻塞原因和解除条件；真正完成时说明完成范围和遗留事项，不制造额外确认循环。Route 不能只输出 findings 或用“下一步我会……”代替真实动作。当环境尚未准备好而必须等待时，只显示 `已就绪`、`继续聊聊`、`取消`；用户回复 `已就绪` 后，Codex 继续实际的只读动作，不要求重复确认。
 
 用户回复 `继续聊聊` 后，Router 必须保持 `discussion`、`no-write` 状态。Codex 要停止尚未完成的写入动作，并在每次写文件前重新检查当前模式和授权。SIDE-HANDOFF 或外部 Skill 的结果只能作为调查事实；Router 必须在主会话重新显示标准交接卡，不能让侧边结果直接推进 Route、Plan 或 implementation。
 
@@ -149,19 +149,19 @@ For a `check-only` result, use a result handoff instead of ending with findings 
 Codex 已经完成当前 Route 允许的检查，并列出证据、影响范围和仍然存在的不确定性。
 
 **下一步：**
-如果你要把结果转成修复任务，Codex 会整理 Brief；如果你只需要结论，Codex 会结束这次只读检查。
+如果你要把结果转成修复任务，Codex 会整理 Brief；如果证据不足，Codex 会继续调查；你也可以继续讨论或取消。
 
 **需要你确认：**
-请选择继续定义修复任务，还是保留只读结果。
+请选择整理修复任务、继续调查、继续讨论或取消。
 
 **怎么回复：**
 `整理 brief`
 
 > 你要把只读结果转成修复任务。Codex 接下来会整理 Brief，但仍然不会修改文件。
 
-`只保留结论`
+`继续调查`
 
-> 你只需要这次检查的结论。Codex 会保留结果并结束当前只读检查，不会进入 implementation。
+> 你认为证据还不够。Codex 会继续只读调查，不会修改文件。
 
 `继续聊聊`
 
@@ -172,9 +172,9 @@ Codex 已经完成当前 Route 允许的检查，并列出证据、影响范围�
 > 你要停止当前任务。Codex 不会继续检查或修改文件。
 ```
 
-For a `plan-only` result, report the real native Plan and show the execution handoff below. `plan-only` means that the current planning period cannot write files; it does not remove the next execution choice. Every Plan result, including a user request that originally said “只做计划”, must ask whether the user wants to implement it. Never end a Plan response with the Plan alone or with a findings-only sentence.
+For a `plan-only` result, report the real native Plan and show the four-choice execution handoff below. `plan-only` means that the current planning period cannot write files; it does not remove the execution authorization choice. If the host has already returned the task through its Implement/return-to-execution action, that observable action authorizes implementation and no duplicate text confirmation is needed. Otherwise, the card asks whether the user wants to implement, modify, discuss, or cancel. Never end a Plan response with the Plan alone or with a findings-only sentence.
 
-这条规则意味着：所有 Plan 完成后都要询问是否实施，包括用户最初只要求计划的情况。
+这条规则意味着：所有 Plan 完成后都要提供执行授权交接，包括用户最初只要求计划的情况；宿主已经提供执行授权时，不再重复询问。
 
 ```markdown
 **结论：这份 Plan 已完成；本轮只做规划，不会修改文件。**
@@ -183,7 +183,7 @@ For a `plan-only` result, report the real native Plan and show the execution han
 Codex 已经写清目标、修改范围、验证方法和风险。因为当前模式是 `plan-only`，这份 Plan 不能直接获得 implementation 权限。
 
 **下一步：**
-你可以让 Codex 按这份 Plan 实施，也可以修改、讨论或只保留方案。确认执行前，Codex 不会修改文件。
+你可以让 Codex 按这份 Plan 实施，也可以修改或继续讨论。确认执行前，Codex 不会修改文件。
 
 **怎么回复：**
 `确认计划，执行`
@@ -198,20 +198,16 @@ Codex 已经写清目标、修改范围、验证方法和风险。因为当前�
 
 > 你暂时不执行这份 Plan，想继续讨论。Codex 会保留 Plan 和已有授权记录，不会修改文件。
 
-`只保留方案`
-
-> 你接受当前方案并结束这次规划。Codex 会保留方案，不进入 implementation。
-
 `取消`
 
 > 你要取消当前任务。Codex 不会执行这份 Plan 或修改文件。
 ```
 
-The user’s `确认计划，执行` is the explicit execution authorization for this Plan, including when the initial request used `plan-only`. `只保留方案` is the terminal planning choice. If the scope or constraints changed during discussion, re-open only the affected Brief, Route, or Plan handoff before execution; otherwise reuse the visible native Plan and existing authorization records.
+The user’s `确认计划，执行` is the explicit execution authorization for this Plan, including when the initial request used `plan-only`. If the scope or constraints changed during discussion, re-open only the affected Brief, Route, or Plan handoff before execution; otherwise reuse the visible native Plan and existing authorization records.
 
 **Small** — Investigate only what is necessary. For a Bug in `implementation`, complete the focused RCA gate above before making the smallest change; for a non-Bug implementation, the minimal change may follow the route handoff. If the user explicitly requests a Plan, use native Plan even for Small work. In `check-only` or while `plan-only` is waiting for execution authorization, do not write. Run the project’s real targeted tests, lint, typecheck, build, or behavior checks; inspect the actual diff; then follow `AGENTS.md` for `git status` and the concise diff summary. Do not create an ExecPlan or Goal, and do not commit or publish automatically. Formal Review is normally unnecessary unless requested or the risk grows.
 
-**Medium** — Investigate first. For a Bug, the read-only investigation must complete the focused/full RCA gate and establish the root cause before Plan or any write. For `implementation`, complete the necessary read-only investigation, then invoke the host’s actual native Plan and wait for it to complete successfully before modifying any file. A hand-written outline or `update_plan` is not proof that native Plan mode was used. If the current host cannot call native Plan itself, follow `Native Plan availability and handoff` below: output the filled Plan request immediately so the user can submit it after manually entering Plan mode, and stop before any write. For `check-only`, continue only with independent read-only checks that do not require Plan; after reporting the findings, show the result handoff with `整理 brief`, `只保留结论`, `继续聊聊`, or another read-only action. For `plan-only`, return the native Plan and the same five-choice execution handoff above; keep the planning period no-write, then allow implementation only after `确认计划，执行` or an observable host Implement/return-to-execution action. After a completed native Plan for `implementation`, use an explicit host action such as Implement or returning to execution mode as execution authorization. If the host has not supplied such authorization, display the plan outcome and stop for `确认计划，执行`; `修改计划`, `继续聊聊`, `只保留方案`, and `取消` handle the other outcomes. Run real verification for implementation. Use native Review or native Colleagues reviewer when there is meaningful logic, behavior, multi-module, concurrency, performance, or regression risk; do not force heavyweight Review for a low-risk Medium. Review never replaces tests; fix only confirmed findings and re-review when needed. If native Review is unavailable, provide the native handoff and do not self-review under another name.
+**Medium** — Investigate first. For a Bug, the read-only investigation must complete the focused/full RCA gate and establish the root cause before Plan or any write. For `implementation`, complete the necessary read-only investigation, then invoke the host’s actual native Plan and wait for it to complete successfully before modifying any file. A hand-written outline or `update_plan` is not proof that native Plan mode was used. If the current host cannot call native Plan itself, follow `Native Plan availability and handoff` below: output the filled Plan request immediately so the user can submit it after manually entering Plan mode, and stop before any write. For `check-only`, continue only with independent read-only checks that do not require Plan; after reporting the findings, show the result handoff with `整理 brief`, `继续调查`, `继续聊聊`, or `取消`. For `plan-only`, return the native Plan and the same four-choice execution handoff above; keep the planning period no-write, then allow implementation only after `确认计划，执行` or an observable host Implement/return-to-execution action. After a completed native Plan for `implementation`, use an explicit host action such as Implement or returning to execution mode as execution authorization. If the host has not supplied such authorization, display the plan outcome and stop for `确认计划，执行`; `修改计划`, `继续聊聊`, and `取消` handle the other outcomes. Run real verification for implementation. Use native Review or native Colleagues reviewer when there is meaningful logic, behavior, multi-module, concurrency, performance, or regression risk; do not force heavyweight Review for a low-risk Medium. Review never replaces tests; fix only confirmed findings and re-review when needed. If native Review is unavailable, provide the native handoff and do not self-review under another name.
 
 For either Medium or Large, when native Plan is unavailable, use `Native Plan availability and handoff` below. Do not emit a bare `/plan`, and do not treat a prose outline or a user’s “我想好了” as native Plan completion.
 
@@ -279,7 +275,7 @@ Plan 结果出现后，Codex 会展示执行交接；在你确认执行或宿主
 
 The block above defines the field order only. In a live handoff, replace every angle-bracketed item with the actual brief and RCA facts before showing it to the user. The live handoff must explicitly say to enter Plan through the host UI and paste the filled request into the current conversation. Once the real native result is visible, consume it directly; do not request another message merely to acknowledge completion and do not ask the user to paste or upload the same result again.
 
-For `implementation`, proceed when the user has used the host’s explicit Implement action or the host has otherwise returned the task to execution mode with the Plan visible. If only the Plan result is visible and execution authorization is not observable, use the completion handoff below. For `check-only`, show the findings handoff with its next choices. For `plan-only`, show the same five-choice planning-end card; the mode remains no-write until `确认计划，执行` or the host’s Implement/return-to-execution action is observable, after which the user may explicitly authorize implementation. Do not treat the plan-only label as a terminal state or as execution authorization.
+For `implementation`, proceed when the user has used the host’s explicit Implement action or the host has otherwise returned the task to execution mode with the Plan visible. If only the Plan result is visible and execution authorization is not observable, use the completion handoff below. For `check-only`, show the findings handoff with its four choices. For `plan-only`, show the same four-choice planning-end card; the mode remains no-write until `确认计划，执行` or the host’s Implement/return-to-execution action is observable, after which the user may explicitly authorize implementation. Do not treat the plan-only label as a terminal state or as execution authorization.
 
 ## Option checkpoint
 
@@ -311,6 +307,10 @@ Codex 可以进入 Option，比较这些方案的实现成本、风险和回滚�
 `继续聊聊`
 
 > 你暂时不选择 Option，想继续讨论。Codex 会保留当前判断，回到讨论，不会开始方案比较或修改文件。
+
+`取消`
+
+> 你要停止当前任务。Codex 不会进入 Option、Plan 或修改文件。
 ```
 
 `进入 option` is the only permission to invoke the optional Skill. `跳过 option` means continue directly to the required native Plan or confirmed Small route. `继续聊聊` leaves the Option checkpoint without invoking it and returns to discussion. If the conditions are not met, state `Option 不触发` and return to the already-required next stage. A confirmed implementation route continues with callable native Plan, the filled manual Plan request, or the confirmed Small route as appropriate; a comparison-only direct entry receives the comparison-result handoff instead of being forced into Plan. Do not insert another text confirmation for a branch that did not trigger.
@@ -324,12 +324,12 @@ When Option does not trigger, make the next handoff explicit instead of silently
 当前证据不足以证明存在高成本且无明显赢家的分叉。
 
 **下一步：**
-Codex 接下来会进入 <下一阶段>。如果这个阶段需要你手动操作或确认，Codex 会在这里把具体动作写清楚。
+Codex 现在继续输出 <下一阶段> 的真实内容；如果下一阶段是手动 Plan，你打开宿主的 Plan 模式并粘贴下一段 Plan 请求，真实 Plan 结果出现前 Codex 不会修改文件。
 
 Option 未触发时，在同一条回复中继续输出下一阶段的真实内容；如果下一阶段是手动 Plan，紧接着输出填满的 `Plan 请求`。
 ```
 
-After the comparison, show each candidate’s trade-offs, evidence, and uncertainty, then show the recommendation and its reason before asking whether to adopt it. `采用 A` or `采用 B` records the user’s direction and returns it to the caller’s existing route; enter the required native Plan only when that route requires planning. It does not authorize a write by itself. A user’s preference or mention of a candidate is not adoption. `只保留比较结果` ends a comparison-only request. `继续聊聊` leaves the selection handoff without entering Plan and returns to discussion. If the user names another direction, record it and explain its impact before returning to the existing route or entering the required Plan. Do not add a silent Plan transition or treat a preference as execution authorization.
+After the comparison, show each candidate’s trade-offs, evidence, and uncertainty, then show the recommendation and its reason before asking whether to `采用 A`, `采用 B`, `继续聊聊` or `取消`; adoption returns an existing task to its original route and enters callable native Plan or the filled manual Plan request only when that route requires planning, while a preference alone does not authorize writes. A request for another direction belongs in `继续聊聊`, where Codex can update the comparison before asking again. A direct comparison-only request returns to discussion after `继续聊聊` and does not need a separate retention command.
 
 ## Native Plan completion handoff
 
@@ -352,10 +352,6 @@ Plan 已经列出要改的范围、主要风险和验证方法。native Plan 是
 
 > 你接受这份 Plan，并授权 Codex 开始 implementation。Codex 接下来会修改文件并运行验证。
 
-`执行`
-
-> 你用简写确认执行。Codex 会把它当作“确认计划，执行”，然后开始 implementation。
-
 `修改计划`
 
 > 你不同意当前 Plan。Codex 会先停在这里，按照你的要求重新整理计划，不会修改文件。
@@ -364,16 +360,12 @@ Plan 已经列出要改的范围、主要风险和验证方法。native Plan 是
 
 > 你暂时不执行这份 Plan，想继续讨论。Codex 会保留 Plan 结果，回到讨论，不会修改文件。
 
-`只保留方案`
-
-> 你只需要当前 Plan，不进入 implementation。Codex 会保留方案并结束规划，不会修改文件。
-
 `取消`
 
 > 你要停止当前任务。Codex 不会执行这份 Plan，也不会修改文件。
 ```
 
-For `check-only`, show the findings and its explicit next-choice card. For `plan-only`, use this same native Plan execution handoff: the mode remains no-write until `确认计划，执行` or the host’s Implement/return-to-execution action is observable. A user-run fallback is complete only when the actual native result is visible, not when the user sends a separate acknowledgement.
+For `check-only`, show the findings and its four-choice read-only handoff. For `plan-only`, use this same native Plan execution handoff: the mode remains no-write until `确认计划，执行` or the host’s Implement/return-to-execution action is observable. A user-run fallback is complete only when the actual native result is visible, not when the user sends a separate acknowledgement.
 
 ## Truthfulness and finish
 

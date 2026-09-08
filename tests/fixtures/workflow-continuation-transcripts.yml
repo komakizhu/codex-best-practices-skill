@@ -55,9 +55,17 @@ cases:
 
           > 你同意这条 Route。Codex 接下来开始只读调查，不会修改文件。
 
+          `修改：请调整调查范围`
+
+          > 你要修改当前 Route。Codex 会按你的说明重新整理 Route，不会开始调查或修改文件。
+
           `继续聊聊`
 
           > 你暂时不确认 Route。Codex 会继续讨论，不会调查或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续调查或修改文件。
 
   - name: plan-only result has an execution handoff
     expected: pass
@@ -78,6 +86,18 @@ cases:
           `确认路由`
 
           > 你同意这条 Route。Codex 接下来制定 Plan，不会修改文件。
+
+          `修改：请调整任务范围`
+
+          > 你要修改当前 Route。Codex 会重新整理 Route，不会制定 Plan 或修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不确认这条 Route。Codex 会继续讨论，不会制定 Plan 或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续规划或执行。
       - actor: user
         text: "确认路由"
       - actor: assistant
@@ -91,7 +111,7 @@ cases:
           Codex 已经写清方案和验证方法。
 
           **下一步：**
-          你可以确认是否实施，也可以修改、讨论或只保留方案；确认执行前，Codex 不会修改文件。
+          你可以确认实施、修改 Plan、继续讨论或取消；确认执行前，Codex 不会修改文件。
 
           **怎么回复：**
           `确认计划，执行`
@@ -105,10 +125,6 @@ cases:
           `继续聊聊`
 
           > 你暂时不执行这份 Plan，想继续讨论。Codex 会保留 Plan，不会修改文件。
-
-          `只保留方案`
-
-          > 你只需要当前方案。Codex 会保留 Plan 并结束规划，不进入 implementation。
 
           `取消`
 
@@ -133,7 +149,17 @@ cases:
           `继续聊聊`
 
           > 你想继续讨论外部结果。Codex 会保留这些事实，不会进入 Route 或修改文件。
+
+          `整理 brief`
+
+          > 你要把外部事实整理进任务摘要。Codex 会生成 Brief，不会进入 Route 或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续处理外部结果或修改文件。
       - actor: assistant
+        channel: main
+        return_from: external
         text: |
           **结论：Workflow 已接住外部 Skill 的结果，准备继续 Route。**
 
@@ -147,6 +173,18 @@ cases:
           `确认路由`
 
           > 你确认继续。Codex 会进入 Route，不会因为外部 Skill 返回就直接修改文件。
+
+          `修改：请调整 Route`
+
+          > 你要修改当前 Route。Codex 会按你的说明重新整理，不会直接修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不进入 Route，想继续讨论。Codex 会保留外部事实，不会修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续处理外部结果或修改文件。
 
   - name: direct task-router Route card requires confirmation
     expected: pass
@@ -256,6 +294,8 @@ cases:
         side_handoff: true
         text: "SIDE-HANDOFF：侧边会话确认了 Heavy 方案的测试结果。"
       - actor: assistant
+        channel: main
+        side_handoff_return: true
         text: |
           **结论：侧边会话的结果已经收到，但它还没有改变当前 Brief 或写入权限。**
 
@@ -277,6 +317,237 @@ cases:
           `取消`
 
           > 你要停止当前任务。Codex 不会继续处理侧边结果或修改文件。
+
+  - name: environment ready evidence and investigation completion
+    expected: pass
+    events:
+      - actor: user
+        text: "$engineering-workflow 检查当前输入问题，不修改文件"
+      - actor: assistant
+        channel: main
+        reply_state: waiting
+        awaits_user: true
+        turn_end: true
+        text: |
+          **结论：调查先等待环境准备，Codex 现在不会读取或修改文件。**
+
+          **已完成：**
+          Codex 已经说明了复现所需的环境准备条件。
+
+          **下一步：**
+          你准备好环境后，Codex 会开始只读调查；当前不会修改文件。
+
+          **怎么回复：**
+          `已就绪`
+
+          > 你已经准备好环境。Codex 接下来开始只读调查，不会修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不准备环境。Codex 会继续讨论复现条件，不会开始调查或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续调查或修改文件。
+      - actor: user
+        text: "已就绪"
+      - actor: assistant
+        channel: main
+        reply_state: progress
+        continues: true
+        turn_end: false
+        text: |
+          **结论：环境已经就绪，Codex 正在开始只读调查。**
+
+          **已完成：**
+          Codex 已经确认复现所需环境可以使用。
+
+          **下一步：**
+          Codex 正在读取相关配置和测试入口，当前不会修改文件。
+      - actor: tool
+        channel: main
+        tool_name: rg
+        write: false
+        text: "读取测试入口和配置引用"
+      - actor: assistant
+        channel: main
+        reply_state: progress
+        continues: true
+        turn_end: false
+        text: |
+          **结论：新的调用链证据已经出现，Codex 正在核对相邻规则。**
+
+          **已完成：**
+          Codex 已经从测试入口和配置引用中找到新的调用链证据。
+
+          **下一步：**
+          Codex 正在比较相邻规则并整理影响范围，当前不会修改文件。
+      - actor: tool
+        channel: main
+        tool_name: ruby
+        write: false
+        text: "运行只读回归检查"
+      - actor: assistant
+        channel: main
+        reply_state: waiting
+        awaits_user: true
+        turn_end: true
+        text: |
+          **结论：只读调查已经结束，Codex 不会修改文件。**
+
+          **已完成：**
+          Codex 已经核对环境、调用链、新证据和相邻影响范围。
+
+          **下一步：**
+          你决定是否把 RCA 结果整理成 Brief；Codex 会按你的选择继续或停止，当前不会修改文件。
+
+          **怎么回复：**
+          `整理 brief`
+
+          > 你要把已确认的调查结果整理成 Brief。Codex 会生成任务摘要，不会直接修改文件。
+
+          `继续调查`
+
+          > 你认为证据还不够。Codex 会继续只读调查，不会修改文件。
+
+          `继续聊聊`
+
+          > 你想继续讨论调查结果。Codex 会保留当前证据，不会进入修复或修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续调查或修改文件。
+
+  - name: option selection returns to the existing route
+    expected: pass
+    events:
+      - actor: user
+        text: "$option-explorer 比较两条有成本差异的技术路线"
+      - actor: assistant
+        channel: main
+        reply_state: waiting
+        awaits_user: true
+        turn_end: true
+        text: |
+          **结论：当前存在两个值得比较的技术方向，Codex 先等待你进入 Option。**
+
+          **已完成：**
+          Codex 已经确认两个方向的实现成本和回滚风险不同，且当前没有明显赢家。
+
+          **下一步：**
+          你选择进入 Option 后，Codex 会比较证据、取舍和不确定性；当前不会修改文件。
+
+          **怎么回复：**
+          `进入 option`
+
+          > 你同意进入 Option。Codex 会比较两个方向，不会直接修改文件。
+
+          `跳过 option`
+
+          > 你不需要额外比较。Codex 会回到原有路线，不会因为跳过 Option 而修改文件。
+
+          `继续聊聊`
+
+          > 你暂时不进入 Option。Codex 会继续讨论方向，不会比较或修改文件。
+      - actor: user
+        text: "进入 option"
+      - actor: assistant
+        channel: main
+        reply_state: waiting
+        awaits_user: true
+        turn_end: true
+        text: |
+          **结论：Option 比较已经完成，方案 A 和方案 B 的取舍如下。**
+
+          **已完成：**
+          Codex 已经比较两个方向的证据、成本、风险和回滚方式，并说明了推荐理由。
+
+          **下一步：**
+          你采用一个方向后，Codex 会把选择带回原有 Route；在需要的 native Plan 和执行授权出现前，不会修改文件。
+
+          **怎么回复：**
+          `采用 A`
+
+          > 你采用方案 A。Codex 会把方案 A 带回原有 Route，不会因此直接修改文件。
+
+          `采用 B`
+
+          > 你采用方案 B。Codex 会把方案 B 带回原有 Route，不会因此直接修改文件。
+
+          `继续聊聊`
+
+          > 你想补充其他方向或继续比较。Codex 会保留当前结果并回到讨论，不会修改文件。
+
+          `取消`
+
+          > 你要停止 Option。Codex 不会选择方案、进入 Plan 或修改文件。
+      - actor: user
+        text: "采用 A"
+      - actor: assistant
+        channel: main
+        reply_state: progress
+        continues: true
+        turn_end: false
+        text: |
+          **结论：方案 A 已被采用，Codex 正在把它带回原有 Route。**
+
+          **已完成：**
+          你已经明确采用方案 A，Codex 已记录这项选择。
+
+          **下一步：**
+          Codex 正在按原有 Route 准备后续 Plan，当前不会修改文件。
+      - actor: tool
+        channel: main
+        tool_name: rg
+        write: false
+        text: "读取原有 Route 的后续 Plan 入口"
+
+  - name: blocked handoff preserves the boundary
+    expected: pass
+    events:
+      - actor: assistant
+        channel: main
+        reply_state: blocked
+        awaits_user: true
+        turn_end: true
+        text: |
+          **结论：当前受阻，宿主没有提供可调用的 native Plan。**
+
+          **已完成：**
+          Codex 已经整理出完整的 Plan 请求，但无法直接进入宿主 Plan 模式。
+
+          **下一步：**
+          你可以把 Plan 请求粘贴到宿主的 Plan 模式；在真实 Plan 结果和执行授权出现前，Codex 不会修改文件。
+
+          **怎么回复：**
+          `继续聊聊`
+
+          > 你想讨论当前阻塞。Codex 会保留 Plan 请求，不会修改文件。
+
+          `修改计划`
+
+          > 你要调整 Plan。Codex 会重新整理请求，不会修改文件。
+
+          `取消`
+
+          > 你要停止当前任务。Codex 不会继续规划或修改文件。
+
+  - name: completed task does not manufacture another confirmation
+    expected: pass
+    events:
+      - actor: assistant
+        channel: main
+        reply_state: complete
+        terminal: true
+        turn_end: true
+        text: |
+          **结论：任务已完成，Codex 不会再制造额外确认。**
+
+          **已完成：**
+          Codex 已经完成修改、真实验证和结果交付。
+
+          **下一步：**
+          Codex 已经交付本次结果；如果没有新的任务，本轮到此结束。
 
   - name: old plan-only bad case is rejected
     expected: fail

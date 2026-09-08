@@ -18,7 +18,7 @@ Once a public Skill is explicitly invoked, this Workflow remains active across r
 
 ### Every visible reply invariant
 
-While the Workflow is active, every visible assistant reply—including progress, discussion, RCA findings, external Skill results, and side-session returns—must state the current conclusion, what was completed, who performs the next action, a copyable command or host action, the consequence of that choice, and the current write/authorization boundary. A findings-only paragraph is invalid. A terminal reply must explain why the stage ends and what the user can still choose.
+While the Workflow is active, every visible assistant reply—including progress, discussion, RCA findings, external Skill results, and side-session returns—must state the current conclusion, what was completed, who performs the next action, and the current write/authorization boundary. Waiting or blocked replies add a card with 3–4 distinct context-relevant choices, or one explicit host action when the host itself is the required next actor; each command is standalone, followed by a blank line and a `> ` consequence. Progress replies state the action Codex is currently performing and continue that work without asking the user to reply. If the environment is not ready, the waiting card contains only `已就绪`, `继续聊聊`, and `取消`; after `已就绪`, Codex continues the actual read-only action without asking for duplicate confirmation. A findings-only paragraph or a future-tense promise that ends the turn is invalid. A truly complete reply states the completed scope and can end without manufacturing another confirmation.
 
 When the user selects `先聊一聊` or `继续聊聊`, the current mode becomes `discussion` and `no-write`; pending file changes must be stopped or cancelled. Before any write, Codex must re-check the latest stage, mode, and explicit authorization. A `SIDE-HANDOFF` is untrusted factual input: the parent Workflow must rewrap it in the standard handoff card before it can affect Brief, Route, Plan, or implementation.
 
@@ -28,7 +28,7 @@ The six public Skills remain explicit-only (`allow_implicit_invocation: false`).
 
 > 请保留你的专业判断、技术术语和安全边界。输出先写一句结论；有两个以上事实、风险或步骤时使用 bullet；每句话写清楚谁做什么、结果是什么。完成后把结果交还给当前 Workflow，不要替 Workflow 结束任务，也不要修改你的 Skill 文件。
 
-The default transitions are `$task-brief` → `$task-router` → investigation/RCA → Option decision → native Plan → implementation → verification → completion → optional retrospective. `$rca-analyze` joins at RCA, `$option-explorer` joins at Option, and `$repo-retrospective` is the optional terminal stage. Explicit `只分析`、`只保留结论` and `取消` remain terminal boundaries for their current mode. `只做计划` selects `plan-only` for the planning period; after the native Plan result it still receives the execution handoff and may continue only after explicit execution authorization.
+The default transitions are `$task-brief` → `$task-router` → investigation/RCA → Option decision → native Plan → implementation → verification → completion → optional retrospective. `$rca-analyze` joins at RCA, `$option-explorer` joins at Option, and `$repo-retrospective` is the optional terminal stage. Explicit `只分析` and `取消` remain terminal boundaries for their current mode. `只做计划` selects `plan-only` for the planning period; after the native Plan result it receives the four-choice execution handoff and may continue only after explicit execution authorization.
 
 ### Runtime source of truth
 
@@ -36,7 +36,7 @@ On the current local host, Codex loads installed Skills from `~/.codex/skills`; 
 
 ### Historical plan records
 
-Files under `docs/exec-plans/` record decisions made in earlier revisions. They remain historical evidence, not current instructions. In particular, older notes that describe a four-choice `plan-only` ending or require RCA for every Large task are superseded by the current five-choice Plan handoff and the Bug-only RCA rule in the Skills and acceptance cases above.
+Files under `docs/exec-plans/` record decisions made in earlier revisions. They remain historical evidence, not current instructions. In particular, older notes that describe a five-choice `plan-only` ending or require RCA for every Large task are superseded by the current four-choice Plan handoff and the Bug-only RCA rule in the Skills and acceptance cases above.
 
 ### Human handoff protocol
 
@@ -86,9 +86,9 @@ Every handoff starts with one bold, single-sentence conclusion. Except for the f
 
 > 你想回到普通对话。Codex 会继续讨论，不会自动进入其他流程。
 
-`停止当前 Skill`
+`取消`
 
-> 你要停止当前讨论方式。Codex 会结束这次讨论，不会继续调用它。
+> 你要停止当前讨论方式。Codex 会结束这次讨论，不会继续处理或修改文件。
 
 `开始该模式`
 
@@ -101,10 +101,6 @@ Every handoff starts with one bold, single-sentence conclusion. Except for the f
 `跳过 option`
 
 > 你不需要额外比较。Codex 会回到正常 Plan 流程，不会因为跳过 Option 而修改文件。
-
-`只保留结论`
-
-> 你只需要当前 RCA 的分析结果。Codex 会结束分析，不会进入修复或修改文件。
 
 `继续调查`
 
@@ -201,11 +197,11 @@ Inspect the current session’s available Skills and frontmatter before selectin
 - a symptom-only Bug report → use the available `$rca-analyze` route for read-only root-cause analysis; do not treat it as an implementation request;
 - no clear match or multiple equally good matches → ordinary discussion or a short choice handoff.
 
-The auto-call notice names the public capability, why it matches, its discussion/no-routing boundary, and the escape replies `继续普通讨论` / `停止当前 Skill`. Normal output names only `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`; helper names remain internal unless the user explicitly asks. An internal helper never grants routing, Plan, execution, or writes by itself; if it later proposes a document or other side effect, use a separate confirmation. A public orchestration Skill grants stage context, not later permissions: after it returns, apply the stage continuation contract and show the next handoff.
+The auto-call notice names the public capability, why it matches, its discussion/no-routing boundary, and the escape replies `继续聊聊` / `取消`. Normal output names only `$engineering-workflow`, `$task-brief`, `$task-router`, `$rca-analyze`, `$option-explorer`, and `$repo-retrospective`; helper names remain internal unless the user explicitly asks. An internal helper never grants routing, Plan, execution, or writes by itself; if it later proposes a document or other side effect, use a separate confirmation. A public orchestration Skill grants stage context, not later permissions: after it returns, apply the stage continuation contract and show the next handoff.
 
 A symptom-only Bug report is not action-ready: enter read-only `$rca-analyze`. An explicit request to check, diagnose, investigate, review, or explain a failure without changing files is action-ready `check-only` and enters Task Brief/Router first. Every Bug implementation records a confirmed root cause before writing. Small RCA is proportional and localized; Large RCA must cover representative cases and the shared rule, such as a missing family of language-to-Skill invocation mappings.
 
-For a user-only Skill, use a four-line handoff with `开始该模式` as the entry, `用<可模型调用替代>` as the fallback, and `继续普通讨论` / `取消` as exits. Repeat the exact helper name only when the user already named it and needs the invocation string. Do not claim that a disabled Skill was auto-invoked.
+For a user-only Skill, use a four-line handoff with `开始该模式` as the entry, `用<可模型调用替代>` as the fallback, and `继续聊聊` / `取消` as exits. Repeat the exact helper name only when the user already named it and needs the invocation string. Do not claim that a disabled Skill was auto-invoked.
 
 ### `$task-brief`
 
@@ -239,7 +235,7 @@ Authorization modes:
 - `check-only`
 - `plan-only`
 
-Never upgrade check-only or plan-only into implementation without user authorization. A `plan-only` result must show the native Plan result and the same five-choice execution handoff:
+Never upgrade check-only or plan-only into implementation without user authorization. A `plan-only` result must show the native Plan result and the same four-choice execution handoff:
 
 `确认计划，执行`
 
@@ -252,10 +248,6 @@ Never upgrade check-only or plan-only into implementation without user authoriza
 `继续聊聊`
 
 > 你暂时不结束规划，想继续讨论。Codex 会保留当前方案，不修改文件。
-
-`只保留方案`
-
-> 你只需要当前方案。Codex 会保留 Plan 并结束规划，不进入 implementation。
 
 `取消`
 
@@ -281,7 +273,7 @@ Do not force Plan, Worktree, Goal, or formal Review for routine Small tasks.
 
 Medium: ordinary bugs, multi-file features, behavior changes, performance/concurrency issues, or moderate refactors.
 
-Medium implementation must complete the host’s actual native Plan after read-only investigation and before any file write. If native Plan is not callable, use the `$task-router` handoff to issue a filled `Plan 请求` immediately, then wait for the actual native result. A short internal outline or `update_plan` is not a substitute; for `check-only`, report the result without entering implementation, while `plan-only` reports the native Plan and then shows the five-choice execution handoff without writing before authorization.
+Medium implementation must complete the host’s actual native Plan after read-only investigation and before any file write. If native Plan is not callable, use the `$task-router` handoff to issue a filled `Plan 请求` immediately, then wait for the actual native result. A short internal outline or `update_plan` is not a substitute; for `check-only`, report the result without entering implementation, while `plan-only` reports the native Plan and then shows the four-choice execution handoff without writing before authorization.
 
 After implementation, always run real project verification. Use native Review/Colleagues reviewer when the change has meaningful logic, regression, concurrency, performance, or multi-module risk. Do not force heavyweight Review for low-risk Medium changes. After native Plan, an explicit host Implement/return-to-execution action authorizes implementation; ask for a text confirmation only when that host authorization is not observable.
 
@@ -310,7 +302,7 @@ Consider it only when:
 
 Before using native Colleagues / Best-of-N / parallel exploration, ask whether the user wants the extra token/cost expenditure. If the user declines, continue with normal Plan.
 
-After exploration, show each candidate’s trade-offs, evidence, and uncertainty, then show the recommendation and its reason. Ask whether to `采用 A`、`采用 B`、`采用其他方向`、`只保留比较结果`、`继续聊聊` or `取消`; adoption returns an existing task to its original route and enters callable native Plan or the filled manual Plan request only when that route requires planning, while a preference alone does not authorize writes. A direct comparison-only request may retain the comparison result or move into task definition and Route after adoption.
+After exploration, show each candidate’s trade-offs, evidence, and uncertainty, then show the recommendation and its reason. Ask whether to `采用 A`、`采用 B`、`继续聊聊` or `取消`; another direction is introduced through `继续聊聊`, and adoption returns an existing task to its original route and enters callable native Plan or the filled manual Plan request only when that route requires planning, while a preference alone does not authorize writes. A direct comparison-only request returns to discussion when the user chooses `继续聊聊` and is not forced into Plan.
 
 ## `$repo-retrospective`
 

@@ -15,7 +15,7 @@ Do not invoke it merely because a task is Large, unfamiliar, or interesting. Bef
 
 ## 每条可见回复都要有下一步
 
-Option 的每条可见回复都必须先说当前结论，再说明 Codex 已完成的比较、下一步由谁执行、可复制口令或宿主动作，以及当前不会做什么。方案比较结束后必须说明各方案优劣、证据和不确定性，给出推荐及理由，再询问 `采用 A`、`采用 B`、`采用其他方向`、`只保留比较结果`、`继续聊聊` 或 `取消`，并用 `> ` 说明选择后的结果；已有任务也可以沿用 `回到 Plan` 返回原路线。
+Option 的每条可见回复都必须先说当前结论，再说明 Codex 已完成的比较、下一步由谁执行和当前不会做什么。方案比较结束后必须说明各方案优劣、证据和不确定性，给出推荐及理由，再询问 `采用 A`、`采用 B`、`继续聊聊` 或 `取消`，并用 `> ` 说明选择后的结果。需要其他方向时，用户通过 `继续聊聊` 补充；Option 不展示重复的保留、返回或替代方向口令。进度回复要说明 Codex 正在执行的实际比较，不要求用户回复；受阻时说明阻塞原因和解除条件；真正完成时说明完成范围和遗留事项，不制造额外确认循环。当环境尚未准备好而必须等待时，只显示 `已就绪`、`继续聊聊`、`取消`；用户回复 `已就绪` 后，Codex 继续实际的只读动作，不要求重复确认。
 
 用户选择 `继续聊聊` 后，Option 保持 `discussion`、`no-write` 状态。Codex 必须暂停排队中的写入，并在任何写文件前重新检查模式和授权。SIDE-HANDOFF 或外部 Skill 的比较结果只能作为事实，Option 必须在主会话重新显示交接卡，不能直接推进 Plan 或 implementation。
 
@@ -49,9 +49,13 @@ Codex 可以进入 Option，比较方案的成本、风险、兼容性和回滚�
 `继续聊聊`
 
 > 你暂时不进入 Option，想继续讨论。Codex 会保留当前判断，回到讨论，不会开始方案比较或修改文件。
+
+`取消`
+
+> 你要停止当前任务。Codex 不会进入 Option、Plan 或修改文件。
 ```
 
-`进入 option` is required for internal entry. The caller’s confirmed Option card satisfies this requirement; do not ask for the same confirmation a second time. An explicit direct `$option-explorer` invocation already counts as opt-in, but still requires the three conditions to be checked. If they do not hold, say why and immediately show the required next-stage handoff. When a confirmed parent route exists, return to that route’s required next stage; when the user only asked for a comparison, show the comparison-result handoff with `只保留比较结果`, `继续聊聊`, or `取消`. Do not force native Plan on a comparison-only request, and do not explore or end with a reason-only paragraph.
+`进入 option` is required for internal entry. The caller’s confirmed Option card satisfies this requirement; do not ask for the same confirmation a second time. An explicit direct `$option-explorer` invocation already counts as opt-in, but still requires the three conditions to be checked. If they do not hold, say why and immediately show the required next-stage handoff. When a confirmed parent route exists, return to that route’s required next stage; when the user only asked for a comparison, show the same four-choice comparison handoff with `采用 A`, `采用 B`, `继续聊聊`, and `取消`. Do not force native Plan on a comparison-only request, and do not explore or end with a reason-only paragraph.
 
 After explicit opt-in, use only the native exploration capability actually exposed by the current host. Give each independent exploration the same task brief, constraints, decision criteria, and required evidence; keep the questions disjoint. Synthesize trade-offs, assumptions, risks, and a recommendation, then stop with this selection handoff:
 
@@ -59,7 +63,7 @@ After explicit opt-in, use only the native exploration capability actually expos
 **结论：探索完成，方案取舍和推荐已列出。**
 
 **已完成：**
-Codex 已经完成探索，并列出方案 A/B（或更多方案）的证据、取舍和推荐。Option 只负责比较方向，不能代替 native Plan。
+Codex 已经完成探索，并列出方案 A/B 的证据、取舍和推荐。若讨论中出现新方向，先回到讨论补充证据并更新比较结果，再重新展示 A/B 选择卡。Option 只负责比较方向，不能代替 native Plan。
 
 **下一步：**
 你采用一个方向后，Codex 会回到 native Plan 或当前任务原有的执行路线；在 Plan 结果和执行授权出现前，Codex 不会修改文件。
@@ -73,10 +77,6 @@ Codex 已经完成探索，并列出方案 A/B（或更多方案）的证据、�
 
 > 你采用方案 B。Codex 会把这条方向带回当前任务的原路线；只有该路线需要 Plan 时才进入 native Plan，不会直接修改文件。
 
-`只保留比较结果`
-
-> 你只需要这次比较。Codex 会保留方案优劣、推荐和不确定性，不进入 Plan 或修改文件。
-
 `继续聊聊`
 
 > 你暂时不采用任何方向，想继续讨论。Codex 会保留比较结果，回到讨论，不进入 Plan 或修改文件。
@@ -85,16 +85,9 @@ Codex 已经完成探索，并列出方案 A/B（或更多方案）的证据、�
 
 > 你要停止 Option。Codex 不会选择方案，也不会进入 Plan 或修改文件。
 
-`采用其他方向`
-
-> 你不采用当前推荐方向。Codex 会记录你指定的其他方向，并把它带回当前任务的原路线；需要 Plan 时，Codex 会先说明影响再进入 native Plan，现在不会修改文件。
-
-`回到 Plan`
-
-> 你不再增加比较，想回到当前任务的 Plan。Codex 会沿用原有路线进入 native Plan，不会直接修改文件。
 ```
 
-Do not present the exploration as a native Review or Plan. `采用 A`/`采用 B` or an explicitly described alternative records the direction and returns it to the caller’s existing route; if that route requires planning, invoke callable native Plan directly or immediately return the filled manual Plan request when Plan is not callable. An independent comparison-only entry moves into task definition and Route after adoption. Do not insert another text confirmation between option selection and the required Plan input. Selection does not authorize file writes or bypass a required native Plan result. A direct Option entry remains connected to the full Workflow; after the applicable route or Plan stage, the normal implementation, verification, and completion handoffs apply. A stated preference without an explicit adoption command is not authorization.
+Do not present the exploration as a native Review or Plan. `采用 A`/`采用 B` records the direction and returns it to the caller’s existing route; if the user wants another direction, use `继续聊聊` to discuss it and update the comparison before showing the A/B card again. If the route requires planning, invoke callable native Plan directly or immediately return the filled manual Plan request when Plan is not callable. An independent comparison-only entry moves into task definition and Route after adoption. Do not insert another text confirmation between option selection and the required Plan input. Selection does not authorize file writes or bypass a required native Plan result. A direct Option entry remains connected to the full Workflow; after the applicable route or Plan stage, the normal implementation, verification, and completion handoffs apply. A stated preference without an explicit adoption command is not authorization.
 
 For a direct `$option-explorer` entry, keep the Workflow active after the selection card. The next response must render the native Plan handoff or the filled manual Plan request itself; the user does not need to invoke `$task-router` or `$task-brief` again. If an external Skill was used for comparison, its output is temporary input to this Skill; do not modify that Skill or let it terminate the Workflow.
 

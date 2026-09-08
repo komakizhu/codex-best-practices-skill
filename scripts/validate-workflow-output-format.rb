@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require_relative 'workflow-handoff-contract'
 
 OUTPUT_ROOT = File.expand_path('..', __dir__)
 
@@ -59,6 +60,19 @@ DISPLAY_LABELS = [
   '共性不变量',
   '触类旁通清单'
 ].freeze
+
+HANDOFF_LABELS = %w[
+  已完成
+  下一步
+  需要你确认
+  怎么回复
+  请确认
+  请回复
+  切换
+  状态
+  后续动作
+].freeze
+REPORT_FIELD_LABELS = (DISPLAY_LABELS - ['结论', '目标'] - HANDOFF_LABELS).freeze
 
 META_LABELS = %w[路由 模式 类型 限制].freeze
 TASK_BRIEF_LABELS = %w[
@@ -171,10 +185,9 @@ PLAN_ONLY_HANDOFF_REQUIREMENTS = [
   '`确认计划，执行`',
   '`修改计划`',
   '`继续聊聊`',
-  '`只保留方案`',
   '`取消`',
   'plan-only',
-  '所有 Plan 完成后都要询问是否实施'
+  '所有 Plan 完成后都要提供执行授权交接'
 ].freeze
 
 EXTERNAL_SKILL_HANDOFF_REQUIREMENTS = [
@@ -265,7 +278,22 @@ PLAN_BEHAVIOR_DOC_TARGETS = [
   'docs/codex-workflow-context.md'
 ].freeze
 
-PLAN_COMMAND_PATTERN = /\A\s*`([^`]+)`\s*\z/.freeze
+PLAN_COMMAND_PATTERN = WorkflowHandoffContract::COMMAND
+FORMAT_MIN_HANDOFF_COMMANDS = WorkflowHandoffContract::MIN_HANDOFF_COMMANDS
+FORMAT_MAX_HANDOFF_COMMANDS = WorkflowHandoffContract::MAX_HANDOFF_COMMANDS
+FORBIDDEN_DISPLAY_COMMANDS = [
+  '只保留方案',
+  '只保留结论',
+  '只保留比较结果',
+  '采用其他方向',
+  '回到 Plan'
+].freeze
+ACTIVE_CONTRACT_TARGETS = [
+  *TARGETS.map { |skill| ".agents/skills/#{skill}/SKILL.md" },
+  *TARGETS.map { |skill| ".agents/skills/#{skill}/agents/openai.yaml" },
+  '.agents/skills/task-router/references/routing-cases.md',
+  'docs/codex-workflow-context.md'
+].freeze
 
 # The words “Plan 已完成” are valid in a result heading. Only the old
 # instruction that asked the user to send a duplicate acknowledgement is stale.
@@ -368,10 +396,41 @@ def command_line?(line)
   !line.nil? && line.match?(PLAN_COMMAND_PATTERN)
 end
 
-def validate_reply_commands(errors, path, lines)
+def handoff_like_block?(lines)
+  return true if lines.any? do |_, line|
+    line.match?(/\*\*(?:#{HANDOFF_LABELS.map { |label| Regexp.escape(label) }.join('|')})：\*\*/)
+  end
+
+  return false unless lines.any? { |_, line| line.match?(/\A\s*\*\*(?:结论|目标)：/) }
+
+  report_pattern = /\A\s*\*\*(?:#{REPORT_FIELD_LABELS.map { |label| Regexp.escape(label) }.join('|')})：\*\*/
+  !lines.any? { |_, line| line.match?(report_pattern) }
+end
+
+def positive_host_action_in_lines?(lines)
+  WorkflowHandoffContract.positive_host_action_in_lines?(lines)
+end
+
+def validate_forbidden_display_commands(errors, path, content)
+  FORBIDDEN_DISPLAY_COMMANDS.each do |command|
+    next unless content.include?(command)
+
+    add_error(errors, path, 1, "活动契约仍包含已删除的展示口令：#{command}")
+  end
+end
+
+def validate_reply_commands(errors, path, lines, required: false)
   response_index = lines.index { |_, line| response_block?(line) }
   command_index = lines.index { |_, line| command_line?(line) }
   if response_index.nil? && command_index.nil?
+    inline_command = lines.find do |_, line|
+      line.match?(/(?:请)?(?:回复|输入|发送|选择)\s+`[^`]+`/)
+    end
+    if inline_command
+      add_error(errors, path, inline_command[0], '口令必须独占一段，不能嵌在正文中')
+    elsif required && !positive_host_action_in_lines?(lines)
+      add_error(errors, path, lines.first[0], '交接回复必须包含独立口令或明确宿主动作')
+    end
     return
   end
 
@@ -393,8 +452,26 @@ def validate_reply_commands(errors, path, lines)
   command_lines = command_region.select { |_, line| command_line?(line) }
 
   if command_lines.empty?
-    add_error(errors, path, command_region.first[0], '回复/切换卡片必须包含独占一段的口令行')
+    unless positive_host_action_in_lines?(command_region)
+      add_error(errors, path, command_region.first[0], '回复/切换卡片必须包含独占一段的口令行或明确宿主动作')
+    end
     return
+  end
+
+  command_values = command_lines.map { |_, line| line.strip.delete('`') }
+  unique_values = command_values.uniq
+  if command_values.include?('执行')
+    execution_line = command_lines.find { |_, line| line.strip.delete('`') == '执行' }
+    add_error(errors, path, execution_line[0], '`执行` 只能作为隐藏输入别名，不能作为额外展示口令')
+  end
+  if unique_values.length < FORMAT_MIN_HANDOFF_COMMANDS
+    add_error(errors, path, command_lines.first[0], "交接卡至少需要 #{FORMAT_MIN_HANDOFF_COMMANDS} 个不同口令")
+  elsif unique_values.length > FORMAT_MAX_HANDOFF_COMMANDS
+    add_error(errors, path, command_lines[FORMAT_MAX_HANDOFF_COMMANDS][0], "交接卡最多需要 #{FORMAT_MAX_HANDOFF_COMMANDS} 个不同口令")
+  end
+  if command_values.length != unique_values.length
+    duplicate_line = command_lines.find { |_, line| command_values.count(line.strip.delete('`')) > 1 }
+    add_error(errors, path, duplicate_line[0], '交接卡不能重复展示同一个口令')
   end
 
   command_lines.each do |line_number, line|
@@ -503,8 +580,8 @@ def validate_block(errors, path, block)
     end
   end
 
-  if lines.any? { |_, line| response_block?(line) } || lines.any? { |_, line| command_line?(line) }
-    validate_reply_commands(errors, path, lines)
+  if lines.any? { |_, line| response_block?(line) } || lines.any? { |_, line| command_line?(line) } || handoff_like_block?(lines)
+    validate_reply_commands(errors, path, lines, required: handoff_like_block?(lines))
   end
 end
 
@@ -540,6 +617,11 @@ TARGETS.each do |skill|
   unless labels == TASK_BRIEF_LABELS
     add_error(errors, path, first_block[:start_line], "Task Brief 必须保持五项且顺序固定：#{TASK_BRIEF_LABELS.join('、')}")
   end
+end
+
+ACTIVE_CONTRACT_TARGETS.each do |relative|
+  path = File.join(OUTPUT_ROOT, relative)
+  validate_forbidden_display_commands(errors, path, File.read(path))
 end
 
 EXTERNAL_WRAPPER_REQUIREMENTS.each do |relative, tokens|

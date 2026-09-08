@@ -17,7 +17,7 @@ Use this Skill for a symptom report that is not yet an authorized investigation 
 
 ## 每条可见回复都要有下一步
 
-RCA 的每条可见回复都必须先给结论，再说明 Codex 已完成的调查、下一步由谁执行、可复制口令或宿主动作，以及当前不会做什么。即使只新增一条证据，也不能只发“已确认”或一段 findings；回复必须让用户知道下一步怎么继续。
+RCA 的每条可见回复都必须先给结论，再说明 Codex 已完成的调查、下一步由谁执行什么动作，以及当前不会做什么。进度回复要写明 Codex 正在执行的实际调查，不要求用户回复；等待用户时才提供 3～4 个有效口令或正向宿主动作；受阻时说明阻塞原因和解除条件；真正完成时说明完成范围和遗留事项，不制造额外确认循环。即使只新增一条证据，也不能只发“已确认”或一段 findings；回复必须让用户知道下一步怎么继续。当环境尚未准备好而必须等待时，只显示 `已就绪`、`继续聊聊`、`取消`；用户回复 `已就绪` 后，Codex 继续实际的只读动作，不要求重复确认。
 
 用户选择 `继续聊聊` 后，RCA 保持 `discussion`、`no-write` 状态；Codex 必须暂停排队中的写入，并在任何写文件前重新检查模式和授权。SIDE-HANDOFF 或外部 Skill 返回的内容只能作为事实，RCA 要在主会话重新显示标准交接卡，不能直接改变 Brief 或授予修复权限。
 
@@ -133,7 +133,7 @@ When the report is complete, use one of these cards and stop. The card is the RC
 Codex 已经把现象、复现证据、调用链、根因和影响范围整理清楚。RCA（Root Cause Analysis）在这里表示“先找出问题为什么发生”，不是直接修复。
 
 **下一步：**
-你可以把结论整理成一项修复任务，也可以只保留这次分析结果。
+你可以把结论整理成一项修复任务，也可以继续调查、继续讨论或取消。
 
 **需要你确认：**
 请决定是否继续定义修复任务。无论选择哪一项，Codex 现在都不会写文件。
@@ -142,10 +142,6 @@ Codex 已经把现象、复现证据、调用链、根因和影响范围整理�
 `整理 brief`
 
 > 你要把已经确认的 RCA 结果转成修复任务。Codex 接下来会整理 Brief，再按 Route、Plan 和实施权限继续；现在不会修改文件。
-
-`只保留结论`
-
-> 你只需要这次 RCA 的结论。Codex 会保留分析结果并结束当前 RCA，不会进入修复或修改文件。
 
 `继续调查`
 
@@ -160,10 +156,10 @@ Codex 已经把现象、复现证据、调用链、根因和影响范围整理�
 > 你要停止当前 RCA。Codex 不会继续调查，也不会修改文件。
 ```
 
-If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. Return according to the entry source: an RCA entered from a confirmed Bug-fix Route returns the findings to `$task-router` and continues that Route without asking for the unchanged Brief again; Small Bug routes can resume their focused implementation path after root-cause confirmation, while Medium/Large Bug routes continue into native Plan. A direct `$rca-analyze` entry uses the card above, where `整理 brief` is the explicit handoff back into the full repair Workflow. In both cases, `只保留结论` ends the analysis and no result grants write permission by itself.
+If the root cause is not confirmed, replace the next step with the missing evidence or read-only investigation and do not offer implementation as if the issue were understood. Return according to the entry source: an RCA entered from a confirmed Bug-fix Route returns the findings to `$task-router` and continues that Route without asking for the unchanged Brief again; Small Bug routes can resume their focused implementation path after root-cause confirmation, while Medium/Large Bug routes continue into native Plan. A direct `$rca-analyze` entry uses the four-choice card above, where `整理 brief` is the explicit handoff back into the full repair Workflow. No RCA result grants write permission by itself.
 
 The return card must preserve the original route, confirmed RCA state, and authorization records. If the RCA changes the scope, risk, task size, or required capability, reopen only that affected Route or Brief decision before continuing; do not restart unchanged gates. A `继续聊聊` choice pauses the current route in `discussion`/`no-write`; discussion or a `SIDE-HANDOFF` cannot resume implementation without an explicit later authorization.
 
-For a direct `$rca-analyze` entry, treat the card above as a live Workflow handoff. After `整理 brief`, render the five-item Brief in the next response; do not ask the user to invoke `$task-brief` again. After `只保留结论`, end the RCA explicitly. If an external Skill helped collect evidence, give it only a temporary output instruction and let this Skill add the final handoff.
+For a direct `$rca-analyze` entry, treat the card above as a live Workflow handoff. After `整理 brief`, render the five-item Brief in the next response; do not ask the user to invoke `$task-brief` again. After `取消`, end the RCA explicitly. If an external Skill helped collect evidence, give it only a temporary output instruction and let this Skill add the final handoff.
 
 When this Workflow temporarily calls an external Skill, start with the conclusion, use subject-action-result Chinese, and return the result to the Workflow; the external Skill must not be edited.
